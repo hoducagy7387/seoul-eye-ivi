@@ -1,0 +1,2967 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>IVI 통합 시스템 — 서울안과</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root{
+  --bg:#f4f5f7; --surface:#ffffff; --ink:#0f172a; --ink2:#334155; --muted:#64748b;
+  --line:#e2e8f0; --line2:#cbd5e1; --brand:#1e40af; --brand2:#1e3a8a;
+  --ok:#059669; --warn:#d97706; --danger:#dc2626; --info:#0369a1;
+  --ok-bg:#ecfdf5; --warn-bg:#fffbeb; --danger-bg:#fef2f2; --info-bg:#eff6ff;
+  --radius:10px; --shadow:0 1px 3px rgba(15,23,42,.08),0 1px 2px rgba(15,23,42,.04);
+  --shadow-lg:0 10px 25px rgba(15,23,42,.1),0 4px 10px rgba(15,23,42,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:"Pretendard","Noto Sans KR",system-ui,sans-serif;font-size:14px;line-height:1.5}
+
+/* ===== Layout ===== */
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+aside{background:var(--ink);color:#e2e8f0;padding:22px 16px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.logo{font-size:11px;letter-spacing:3px;color:#94a3b8;font-weight:700;margin-bottom:4px}
+.title{font-size:17px;font-weight:800;color:#fff;margin-bottom:22px;line-height:1.3}
+.title span{color:#60a5fa}
+nav button{display:flex;align-items:center;gap:10px;width:100%;background:transparent;border:none;
+  color:#cbd5e1;padding:10px 12px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:13.5px;
+  text-align:left;margin-bottom:2px;transition:all .15s;font-weight:500}
+nav button:hover{background:#1e293b;color:#fff}
+nav button.active{background:#1e40af;color:#fff;font-weight:600}
+nav button .ic{font-size:16px;width:20px;text-align:center}
+.nav-section{font-size:10px;letter-spacing:2px;color:#64748b;font-weight:700;margin:20px 0 8px 12px;text-transform:uppercase}
+.sidebar-foot{position:absolute;bottom:16px;left:16px;right:16px;font-size:11px;color:#64748b;border-top:1px solid #334155;padding-top:12px}
+
+main{padding:28px 32px 60px;overflow-x:hidden}
+.page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;gap:16px;flex-wrap:wrap}
+h1{font-size:22px;font-weight:800;color:var(--ink)}
+.page-sub{font-size:13px;color:var(--muted);margin-top:2px}
+
+/* ===== Buttons ===== */
+.btn{display:inline-flex;align-items:center;gap:6px;background:var(--brand);color:#fff;border:none;
+  padding:9px 16px;border-radius:6px;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;
+  transition:all .15s}
+.btn:hover{background:var(--brand2)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line2)}
+.btn.ghost:hover{background:var(--surface);border-color:var(--ink2)}
+.btn.danger{background:var(--danger)}
+.btn.danger:hover{background:#b91c1c}
+.btn.sm{padding:6px 10px;font-size:12px}
+.btn.ok{background:var(--ok)}
+.btn.ok:hover{background:#047857}
+
+/* ===== Cards ===== */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.card h3{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--ink)}
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+
+/* ===== Stats Grid ===== */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.stat .lbl{font-size:11px;letter-spacing:1.5px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:8px}
+.stat .val{font-size:28px;font-weight:800;color:var(--ink);line-height:1}
+.stat .delta{font-size:12px;color:var(--muted);margin-top:6px}
+.stat.accent{background:var(--brand);color:#fff}
+.stat.accent .lbl{color:#bfdbfe}
+.stat.accent .val{color:#fff}
+.stat.accent .delta{color:#dbeafe}
+.stat.danger .val{color:var(--danger)}
+.stat.warn .val{color:var(--warn)}
+.stat.ok .val{color:var(--ok)}
+
+/* ===== Tables ===== */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{background:#f8fafc;font-weight:700;color:var(--ink2);padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);font-size:12px;letter-spacing:.5px}
+.tbl td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tr:hover td{background:#f8fafc}
+.tbl tr.row-overdue td{background:#fef2f2}
+.tbl tr.row-overdue:hover td{background:#fee2e2}
+.tbl tr.row-today td{background:#eff6ff;font-weight:500}
+.tbl tr.row-today:hover td{background:#dbeafe}
+.tbl tr.clickable{cursor:pointer}
+.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px}
+
+/* ===== Badges ===== */
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:4px;font-weight:600;letter-spacing:.3px}
+.badge.blue{background:#dbeafe;color:#1e40af}
+.badge.green{background:#d1fae5;color:#065f46}
+.badge.amber{background:#fef3c7;color:#92400e}
+.badge.red{background:#fee2e2;color:#991b1b}
+.badge.slate{background:#e2e8f0;color:#334155}
+.badge.purple{background:#ede9fe;color:#5b21b6}
+.badge.pink{background:#fce7f3;color:#9f1239}
+
+/* ===== Forms ===== */
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 18px}
+.form-grid.cols-3{grid-template-columns:repeat(3,1fr)}
+.form-grid.cols-4{grid-template-columns:repeat(4,1fr)}
+.field{display:flex;flex-direction:column;gap:5px}
+.field.full{grid-column:1/-1}
+.field label{font-size:12px;font-weight:600;color:var(--ink2)}
+.field label .req{color:var(--danger)}
+.field input,.field select,.field textarea{width:100%;padding:9px 11px;border:1px solid var(--line2);
+  border-radius:6px;font-family:inherit;font-size:13.5px;background:#fff;color:var(--ink);transition:border .15s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(30,64,175,.1)}
+.field .hint{font-size:11px;color:var(--muted)}
+.field textarea{resize:vertical;min-height:60px}
+.radio-group{display:flex;gap:4px;flex-wrap:wrap}
+.radio-group label{cursor:pointer;padding:7px 12px;border:1px solid var(--line2);border-radius:6px;font-size:13px;font-weight:500;background:#fff;transition:all .15s}
+.radio-group label.checked{background:var(--brand);color:#fff;border-color:var(--brand)}
+.radio-group input{display:none}
+
+/* ===== Modal ===== */
+.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;z-index:100;
+  align-items:flex-start;justify-content:center;overflow-y:auto;padding:30px 16px;backdrop-filter:blur(4px)}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-lg);width:100%;max-width:720px;overflow:hidden;animation:slideUp .25s ease-out}
+.modal-lg{max-width:900px}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.modal-head h2{font-size:17px;font-weight:700}
+.modal-close{background:none;border:none;font-size:24px;cursor:pointer;color:var(--muted);line-height:1}
+.modal-body{padding:22px;max-height:70vh;overflow-y:auto}
+.modal-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;background:#f8fafc}
+
+/* ===== Search/Filter Bar ===== */
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.toolbar input,.toolbar select{padding:8px 12px;border:1px solid var(--line2);border-radius:6px;font-family:inherit;font-size:13px;background:#fff}
+.toolbar input{min-width:200px}
+.toolbar input:focus,.toolbar select:focus{outline:none;border-color:var(--brand)}
+.toolbar .spacer{flex:1}
+
+/* ===== Detail Panel ===== */
+.detail-grid{display:grid;grid-template-columns:320px 1fr;gap:20px;margin-bottom:20px}
+.detail-grid .info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.detail-grid .info-row .lbl{color:var(--muted);font-weight:500}
+.detail-grid .info-row .val{font-weight:600}
+.schedule-box{background:linear-gradient(135deg,#1e40af 0%,#1e3a8a 100%);color:#fff;padding:20px;border-radius:var(--radius);margin-bottom:16px}
+.schedule-box .lbl{font-size:11px;letter-spacing:2px;color:#bfdbfe;font-weight:700;margin-bottom:6px}
+.schedule-box .date{font-size:26px;font-weight:800;margin-bottom:4px}
+.schedule-box .sub{font-size:12px;color:#dbeafe}
+.schedule-box.overdue{background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%)}
+.schedule-box.overdue .lbl{color:#fecaca}
+.schedule-box.overdue .sub{color:#fee2e2}
+.schedule-box.stopped{background:linear-gradient(135deg,#64748b 0%,#475569 100%)}
+
+.inj-timeline{margin-top:14px}
+.inj-item{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:8px;display:grid;grid-template-columns:90px 1fr auto;gap:14px;align-items:center}
+.inj-item .no{background:var(--brand);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.inj-item .date-blk{font-weight:700;font-size:13px}
+.inj-item .date-blk .d{color:var(--muted);font-size:11px;font-weight:500;margin-top:2px}
+.inj-item .meta{font-size:12px;color:var(--ink2);display:flex;gap:14px;flex-wrap:wrap}
+.inj-item .meta b{color:var(--ink)}
+.inj-item.complication{border-color:var(--warn);background:var(--warn-bg)}
+
+/* ===== Tabs ===== */
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin-bottom:18px}
+.tab{background:none;border:none;padding:10px 18px;font-family:inherit;font-size:13.5px;cursor:pointer;color:var(--muted);font-weight:600;border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab.active{color:var(--brand);border-color:var(--brand)}
+
+/* ===== Utility ===== */
+.mt-12{margin-top:12px}
+.mt-20{margin-top:20px}
+.flex{display:flex;gap:8px;align-items:center}
+.between{justify-content:space-between}
+.hidden{display:none !important}
+.text-right{text-align:right}
+.text-muted{color:var(--muted)}
+.tiny{font-size:11px}
+hr{border:none;border-top:1px solid var(--line);margin:14px 0}
+
+/* ===== Mobile ===== */
+.menu-toggle{display:none;background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink)}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  aside{position:fixed;top:0;left:-260px;width:240px;height:100vh;z-index:50;transition:left .2s}
+  aside.open{left:0}
+  main{padding:20px 16px 60px}
+  .menu-toggle{display:inline-block}
+  .detail-grid{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .form-grid.cols-3,.form-grid.cols-4{grid-template-columns:repeat(2,1fr)}
+  .inj-item{grid-template-columns:1fr;gap:6px}
+  h1{font-size:19px}
+}
+
+/* ==========================================
+   MANUAL VIEW (의료진 프로토콜) — scoped styles
+========================================== */
+.manual-view{
+  --m-ink:#101418; --m-paper:#fafaf7; --m-accent:#8b1a1a; --m-accent2:#1e4d6b;
+  --m-warn:#b45309; --m-ok:#15803d; --m-rule:#d4d0c5; --m-muted:#6b6660;
+  background:var(--m-paper); color:var(--m-ink);
+  font-family:"Noto Serif KR","Nanum Myeongjo",Georgia,serif; font-size:15px; line-height:1.7;
+  padding:32px 36px; margin:-28px -32px 0; min-height:calc(100vh - 20px);
+}
+.manual-view .m-head{border-bottom:3px double var(--m-ink);padding-bottom:20px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.manual-view .m-eyebrow{font-family:"Noto Sans KR",sans-serif;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--m-accent);font-weight:700;margin-bottom:10px}
+.manual-view .m-title{font-size:28px;margin:0 0 6px;letter-spacing:-.5px;line-height:1.25;font-weight:800}
+.manual-view .m-sub{color:var(--m-muted);font-size:13.5px}
+.manual-view .m-toc{background:#f1ede3;border:1px solid var(--m-rule);padding:16px 20px;margin:20px 0 28px;font-family:"Noto Sans KR",sans-serif;font-size:13.5px}
+.manual-view .m-toc b{display:block;margin-bottom:8px;font-size:12px;letter-spacing:2px;color:var(--m-accent)}
+.manual-view .m-toc ol{margin:0;padding-left:20px;columns:2;column-gap:24px}
+.manual-view .m-toc li{margin-bottom:4px;break-inside:avoid}
+.manual-view .m-toc a{color:var(--m-ink);text-decoration:none;border-bottom:1px dotted var(--m-muted);cursor:pointer}
+.manual-view h2{font-family:"Noto Sans KR",sans-serif;font-size:20px;margin:36px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--m-ink);letter-spacing:-.3px;color:var(--m-ink);font-weight:700}
+.manual-view h2 .num{color:var(--m-accent);font-weight:700;margin-right:8px}
+.manual-view h3{font-family:"Noto Sans KR",sans-serif;font-size:16px;margin:22px 0 8px;color:var(--m-accent2);font-weight:700}
+.manual-view h4{font-family:"Noto Sans KR",sans-serif;font-size:14px;margin:14px 0 6px;font-weight:700}
+.manual-view p,.manual-view li{font-size:14.5px;color:var(--m-ink)}
+.manual-view ul,.manual-view ol{padding-left:22px;margin:6px 0}
+.manual-view li{margin-bottom:4px}
+.manual-view table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13px;font-family:"Noto Sans KR",sans-serif}
+.manual-view th,.manual-view td{border:1px solid var(--m-rule);padding:8px 10px;text-align:left;vertical-align:top;background:#fff}
+.manual-view th{background:#ece8dc;font-weight:600}
+.manual-view .m-callout{border-left:4px solid var(--m-accent);background:#fdf6f6;padding:12px 16px;margin:14px 0;font-family:"Noto Sans KR",sans-serif;font-size:13.5px}
+.manual-view .m-callout.warn{border-color:var(--m-warn);background:#fff7ed}
+.manual-view .m-callout.ok{border-color:var(--m-ok);background:#f0fdf4}
+.manual-view .m-callout.info{border-color:var(--m-accent2);background:#eff6ff}
+.manual-view .m-callout b:first-child{display:block;margin-bottom:4px;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--m-accent)}
+.manual-view .m-callout.warn b:first-child{color:var(--m-warn)}
+.manual-view .m-callout.ok b:first-child{color:var(--m-ok)}
+.manual-view .m-callout.info b:first-child{color:var(--m-accent2)}
+.manual-view .m-checklist{list-style:none;padding-left:0;font-family:"Noto Sans KR",sans-serif;font-size:14px}
+.manual-view .m-checklist li{padding:6px 0 6px 28px;border-bottom:1px dashed var(--m-rule);position:relative;margin:0}
+.manual-view .m-checklist li::before{content:"☐";position:absolute;left:0;top:6px;font-size:18px;color:var(--m-accent)}
+.manual-view .m-step{display:flex;gap:16px;margin:14px 0;padding:12px;background:#fff;border:1px solid var(--m-rule)}
+.manual-view .m-step .n{flex-shrink:0;width:34px;height:34px;background:var(--m-ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-family:"Noto Sans KR",sans-serif;font-size:14px}
+.manual-view .m-step .c{flex:1;font-family:"Noto Sans KR",sans-serif;font-size:14px}
+.manual-view .m-step .c b{display:block;font-size:14.5px;margin-bottom:3px}
+.manual-view .m-small{font-size:12.5px;color:var(--m-muted)}
+.manual-view .m-grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:14px 0}
+.manual-view .m-grid2 > div{background:#fff;border:1px solid var(--m-rule);padding:14px}
+.manual-view .m-grid2 h4{margin-top:0}
+.manual-view .m-ref{font-family:"Noto Sans KR",sans-serif;font-size:11.5px;color:var(--m-muted);margin-top:40px;padding-top:16px;border-top:1px solid var(--m-rule)}
+
+/* ==========================================
+   CONSENT VIEW (환자 안내·동의서) — scoped styles
+========================================== */
+.consent-view{
+  background:#eae6de; color:#1a1a1a;
+  font-family:"Nanum Gothic","Noto Sans KR",sans-serif;font-size:15px;line-height:1.85;
+  padding:20px 16px 40px; margin:-28px -32px 0;
+}
+.consent-view .c-toolbar{max-width:820px;margin:0 auto 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.consent-view .c-toolbar .patient-select{background:#fff;padding:10px 14px;border:1px solid #cbd5e1;border-radius:6px;font-family:inherit;font-size:14px;min-width:240px}
+.consent-view .c-toolbar .c-btns{display:flex;gap:8px}
+.consent-view .c-toolbar button{background:#0f172a;color:#fff;border:none;padding:10px 16px;border-radius:6px;font-family:inherit;font-size:14px;cursor:pointer;font-weight:600}
+.consent-view .c-toolbar button:hover{background:#1e293b}
+.consent-view .c-toolbar button.ghost{background:#fff;color:#0f172a;border:1px solid #cbd5e1}
+.consent-view .page{max-width:820px;margin:20px auto;background:#fff;padding:44px 48px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.consent-view .page + .page{margin-top:16px}
+.consent-view .c-head{border-bottom:4px solid #0f172a;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.consent-view .clinic{font-size:13px;color:#64748b;letter-spacing:2px}
+.consent-view h1{font-size:25px;margin:8px 0 0;letter-spacing:-.5px;font-weight:800;color:#0f172a}
+.consent-view .subtitle{color:#475569;font-size:14px;margin-top:4px}
+.consent-view .big-note{background:#fff7ed;border:2px solid #ea580c;padding:18px 22px;margin:22px 0;font-size:15px;font-weight:600;line-height:1.7;color:#1a1a1a}
+.consent-view .big-note b{color:#ea580c;display:block;margin-bottom:6px;font-size:13px;letter-spacing:3px}
+.consent-view h2{font-size:18px;margin:26px 0 10px;padding-left:14px;border-left:6px solid #0f172a;font-weight:800;color:#0f172a}
+.consent-view h3{font-size:16px;margin:16px 0 6px;color:#0f172a;font-weight:700}
+.consent-view .consent-view h4{margin:0}
+.consent-view p,.consent-view li{font-size:14.5px;color:#1a1a1a;margin:0}
+.consent-view p{margin:6px 0}
+.consent-view ul{padding-left:22px;margin:8px 0}
+.consent-view ul li{margin-bottom:6px;list-style:disc}
+.consent-view .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0}
+.consent-view .info-card{background:#f8fafc;border:1px solid #cbd5e1;padding:14px 16px;border-radius:6px}
+.consent-view .info-card h4{margin:0 0 6px;font-size:14.5px;color:#0f172a;font-weight:700}
+.consent-view .info-card p{margin:0;font-size:13.5px;color:#1a1a1a}
+.consent-view .emergency{background:#7f1d1d;color:#fff;padding:18px 22px;margin:20px 0;border-radius:8px}
+.consent-view .emergency b:first-child{display:block;font-size:12px;letter-spacing:4px;color:#fca5a5;margin-bottom:10px}
+.consent-view .emergency h3{margin:0 0 8px;color:#fff;font-size:17px}
+.consent-view .emergency ul{margin:6px 0 0;padding-left:20px}
+.consent-view .emergency li{color:#fee2e2;margin-bottom:4px;list-style:disc}
+.consent-view .phone{font-size:20px;font-weight:800;letter-spacing:1px;margin-top:10px;color:#fff}
+.consent-view .icon-list{list-style:none;padding:0;margin:10px 0}
+.consent-view .icon-list li{display:flex;gap:12px;padding:10px 0;border-bottom:1px dashed #cbd5e1;list-style:none;margin:0}
+.consent-view .icon-list .ic{flex-shrink:0;width:30px;height:30px;background:#0f172a;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.consent-view .c-timeline{margin:12px 0}
+.consent-view .c-timeline-row{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid #e2e8f0}
+.consent-view .c-timeline-row .when{flex-shrink:0;width:100px;font-weight:700;color:#0f172a}
+.consent-view .c-timeline-row .what{flex:1}
+.consent-view .signature-box{margin-top:34px;border-top:2px solid #0f172a;padding-top:20px}
+.consent-view .signature-box table{width:100%;border-collapse:collapse}
+.consent-view .signature-box td{border:1px solid #94a3b8;padding:12px 10px;vertical-align:top;font-size:13.5px;background:#fff}
+.consent-view .signature-box .label{background:#f1f5f9;font-weight:700;width:30%}
+.consent-view .signature-box .sigline{min-height:54px}
+.consent-view .checklist-consent{list-style:none;padding:0;margin:14px 0;font-size:14px}
+.consent-view .checklist-consent li{padding:10px 12px 10px 44px;position:relative;border-bottom:1px solid #e2e8f0;line-height:1.6;list-style:none;margin:0}
+.consent-view .checklist-consent li::before{content:"☐";position:absolute;left:12px;top:8px;font-size:20px;color:#0f172a}
+.consent-view .checklist-consent li b{color:#7f1d1d}
+.consent-view .checklist-consent ul{margin:6px 0 0;padding-left:20px}
+.consent-view .checklist-consent ul li{padding:2px 0;border:none}
+.consent-view .checklist-consent ul li::before{content:"·";left:4px;top:2px;font-size:16px}
+.consent-view .c-small{font-size:12.5px;color:#64748b;margin-top:20px}
+.consent-view table.info-tbl{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}
+.consent-view table.info-tbl td{border:1px solid #94a3b8;padding:10px;background:#fff}
+.consent-view table.info-tbl td.lbl{background:#f1f5f9;font-weight:700;width:22%}
+.consent-view .fill{background:#fef9c3;padding:1px 4px;border-radius:2px;font-weight:600}
+
+/* ==========================================
+   PER-DOCUMENT PRINT ISOLATION
+   각 문서 .printable 블록 단위로만 인쇄
+========================================== */
+@media print{
+  body.print-isolated aside,
+  body.print-isolated .menu-toggle,
+  body.print-isolated .c-toolbar,
+  body.print-isolated .doc-head-bar,
+  body.print-isolated .modal-bg{display:none !important}
+  body.print-isolated .app{grid-template-columns:1fr}
+  body.print-isolated main{padding:0}
+  body.print-isolated .printable:not(.active-print){display:none !important}
+  body.print-isolated .printable.active-print{display:block !important;page-break-before:auto;page-break-after:auto}
+}
+
+/* ==========================================
+   NURSE GUIDE VIEW (간호사 시술실 가이드 — 포스터형)
+========================================== */
+.nurse-view{
+  background:#f4f5f7;
+  padding:20px 16px 40px; margin:-28px -32px 0;
+  font-family:"Pretendard","Noto Sans KR",sans-serif;
+}
+.nurse-view .n-toolbar{max-width:880px;margin:0 auto 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.nurse-view .n-toolbar .title-wrap h1{font-size:20px;font-weight:800;color:#0f172a}
+.nurse-view .n-toolbar .title-wrap .sub{font-size:13px;color:#64748b;margin-top:2px}
+.nurse-view .n-btns{display:flex;gap:8px;flex-wrap:wrap}
+.nurse-view .n-btns button{background:#0f172a;color:#fff;border:none;padding:10px 16px;border-radius:6px;font-family:inherit;font-size:14px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px}
+.nurse-view .n-btns button:hover{background:#1e293b}
+.nurse-view .n-btns button.ghost{background:#fff;color:#0f172a;border:1px solid #cbd5e1}
+
+/* 포스터 공통 (A4 세로 기준) */
+.nurse-view .poster{
+  max-width:880px;margin:20px auto;background:#fff;
+  padding:32px 36px;box-shadow:0 4px 24px rgba(0,0,0,.08);
+  position:relative;min-height:1000px;
+}
+.nurse-view .poster .doc-head-bar{display:flex;justify-content:flex-end;margin-bottom:-10px}
+.nurse-view .poster .doc-head-bar button{background:#059669;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px}
+.nurse-view .poster .doc-head-bar button:hover{background:#047857}
+
+/* 포스터 헤더 — 크게, 강렬하게 */
+.nurse-view .p-head{border-bottom:5px solid #0f172a;padding-bottom:14px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px}
+.nurse-view .p-head .p-eyebrow{font-size:11px;letter-spacing:5px;color:#dc2626;font-weight:800;margin-bottom:6px;text-transform:uppercase}
+.nurse-view .p-head h1{font-size:32px;font-weight:900;letter-spacing:-1px;color:#0f172a;line-height:1.1}
+.nurse-view .p-head .p-sub{font-size:14px;color:#475569;margin-top:4px}
+.nurse-view .p-head .p-meta{font-size:12px;color:#64748b;text-align:right}
+
+/* 포스터 섹션 */
+.nurse-view .p-sec{margin:18px 0}
+.nurse-view .p-sec-title{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.nurse-view .p-sec-title .n-num{background:#0f172a;color:#fff;width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:19px;font-weight:800}
+.nurse-view .p-sec-title h2{font-size:20px;font-weight:800;color:#0f172a}
+
+/* 큰 체크리스트 — 시술실에서 멀리서도 보이게 */
+.nurse-view .big-check{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}
+.nurse-view .big-check li{padding:10px 12px 10px 40px;position:relative;font-size:15px;line-height:1.5;background:#f8fafc;border-left:4px solid #0f172a;border-radius:3px}
+.nurse-view .big-check li::before{content:"☐";position:absolute;left:10px;top:7px;font-size:22px;color:#0f172a;font-weight:700}
+.nurse-view .big-check li b{color:#0f172a}
+.nurse-view .big-check li.warn{background:#fef3c7;border-left-color:#d97706}
+.nurse-view .big-check li.warn::before{color:#d97706}
+.nurse-view .big-check li.danger{background:#fee2e2;border-left-color:#dc2626}
+.nurse-view .big-check li.danger::before{color:#dc2626}
+.nurse-view .big-check.one-col{grid-template-columns:1fr}
+
+/* 핵심 수치 박스 */
+.nurse-view .key-nums{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+.nurse-view .key-nums .kn{background:#0f172a;color:#fff;padding:14px 10px;text-align:center;border-radius:8px}
+.nurse-view .key-nums .kn .val{font-size:28px;font-weight:900;line-height:1;color:#fbbf24}
+.nurse-view .key-nums .kn .lbl{font-size:11px;letter-spacing:1px;margin-top:6px;color:#cbd5e1;text-transform:uppercase}
+
+/* Time-Out 박스 — 강조 */
+.nurse-view .time-out{background:#1e40af;color:#fff;padding:18px 22px;margin:16px 0;border-radius:10px;border:3px solid #1e3a8a}
+.nurse-view .time-out .to-head{font-size:13px;letter-spacing:3px;color:#bfdbfe;font-weight:800;margin-bottom:8px;text-transform:uppercase}
+.nurse-view .time-out h3{font-size:22px;font-weight:900;margin-bottom:10px}
+.nurse-view .time-out ul{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}
+.nurse-view .time-out li{padding:4px 0 4px 22px;position:relative;font-size:14px}
+.nurse-view .time-out li::before{content:"🔊";position:absolute;left:0;top:3px;font-size:13px}
+.nurse-view .time-out li b{color:#fef3c7}
+
+/* 응급 박스 — 강렬한 빨강 */
+.nurse-view .emg-box{background:#991b1b;color:#fff;padding:18px 22px;margin:16px 0;border-radius:10px;border:3px solid #7f1d1d}
+.nurse-view .emg-box .eb-head{font-size:13px;letter-spacing:3px;color:#fecaca;font-weight:800;margin-bottom:6px}
+.nurse-view .emg-box h3{font-size:22px;font-weight:900;margin-bottom:10px}
+.nurse-view .emg-box .eb-steps{list-style:none;padding:0;margin:0}
+.nurse-view .emg-box .eb-steps li{padding:8px 0 8px 38px;position:relative;font-size:15px;border-bottom:1px dashed rgba(255,255,255,.25)}
+.nurse-view .emg-box .eb-steps li:last-child{border-bottom:none}
+.nurse-view .emg-box .eb-steps li .step-n{position:absolute;left:0;top:7px;width:28px;height:28px;background:#fbbf24;color:#7f1d1d;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px}
+.nurse-view .emg-box .eb-steps li b{color:#fef3c7}
+.nurse-view .emg-box .eb-contact{background:rgba(0,0,0,.3);padding:10px 14px;margin-top:12px;border-radius:6px;font-size:14px}
+.nurse-view .emg-box .eb-contact b{font-size:17px;color:#fef3c7}
+
+/* 2단 그리드 */
+.nurse-view .two-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+.nurse-view .two-grid > div{background:#f8fafc;border:1px solid #cbd5e1;padding:14px;border-radius:6px}
+.nurse-view .two-grid h4{font-size:14px;font-weight:800;color:#0f172a;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #0f172a}
+.nurse-view .two-grid ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.6}
+.nurse-view .two-grid li{margin-bottom:3px}
+
+/* 포스터 푸터 */
+.nurse-view .p-foot{margin-top:20px;padding-top:12px;border-top:1px solid #cbd5e1;font-size:11px;color:#64748b;display:flex;justify-content:space-between}
+
+@media print{
+  .nurse-view{background:#fff !important;margin:0 !important;padding:0 !important}
+  .nurse-view .poster{box-shadow:none;margin:0;padding:18px 18px;min-height:auto;page-break-after:always}
+  .nurse-view .poster:last-child{page-break-after:auto}
+  .nurse-view .doc-head-bar{display:none !important}
+}
+
+@media (max-width:760px){
+  .nurse-view{margin:-20px -16px 0;padding:14px 10px}
+  .nurse-view .poster{padding:22px 18px}
+  .nurse-view .big-check,.nurse-view .two-grid,.nurse-view .time-out ul,.nurse-view .key-nums{grid-template-columns:1fr}
+  .nurse-view .p-head h1{font-size:24px}
+}
+
+/* ==========================================
+   PATIENT-POST INSTRUCTION (주사 후 안내문) styles
+========================================== */
+.consent-view .post-instr .inject-info{background:#1e40af;color:#fff;padding:16px 20px;margin:0 0 18px;border-radius:8px}
+.consent-view .post-instr .inject-info .ii-row{display:flex;gap:20px;font-size:14px;flex-wrap:wrap;margin-top:6px}
+.consent-view .post-instr .inject-info .ii-row span{opacity:.9}
+.consent-view .post-instr .inject-info .ii-row b{color:#fef3c7}
+.consent-view .post-instr .next-visit{background:#fef3c7;border:2px dashed #d97706;padding:16px 20px;margin:16px 0;border-radius:8px;text-align:center}
+.consent-view .post-instr .next-visit .nv-lbl{font-size:12px;letter-spacing:2px;color:#92400e;font-weight:800;margin-bottom:6px}
+.consent-view .post-instr .next-visit .nv-date{font-size:24px;font-weight:800;color:#0f172a;letter-spacing:2px}
+.consent-view .post-instr .next-visit .nv-sub{font-size:12px;color:#78716c;margin-top:4px}
+.consent-view .post-instr .eyedrop-box{background:#ecfdf5;border:1px solid #059669;padding:14px 18px;margin:14px 0;border-radius:6px}
+.consent-view .post-instr .eyedrop-box h3{color:#065f46;font-size:15px;margin-bottom:8px}
+.consent-view .post-instr .eyedrop-box .drug-line{font-size:14px;margin:4px 0;padding-left:20px;position:relative}
+.consent-view .post-instr .eyedrop-box .drug-line::before{content:"💧";position:absolute;left:0;top:0}
+.consent-view .post-instr .drop-tracker{margin:14px 0}
+.consent-view .post-instr .drop-tracker h3{font-size:15px;margin-bottom:8px;color:#0f172a}
+.consent-view .post-instr .drop-tracker table{width:100%;border-collapse:collapse;font-size:13px}
+.consent-view .post-instr .drop-tracker th,.consent-view .post-instr .drop-tracker td{border:1px solid #94a3b8;padding:8px 6px;text-align:center;background:#fff}
+.consent-view .post-instr .drop-tracker th{background:#f1f5f9;font-weight:700;font-size:12px}
+.consent-view .post-instr .drop-tracker td.day{background:#f8fafc;font-weight:700;width:14%}
+.consent-view .post-instr .drop-tracker td.chk{font-size:18px;color:#cbd5e1}
+.consent-view .doc-head-bar{display:flex;justify-content:flex-end;margin-bottom:8px}
+.consent-view .doc-head-bar button{background:#059669;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px}
+.consent-view .doc-head-bar button:hover{background:#047857}
+
+/* Print — 전역 기본 인쇄 룰 (consent/manual 뷰에서 toolbar·sidebar 숨김) */
+@media print{
+  aside,.menu-toggle,.toolbar,.btn,.modal-bg{display:none !important}
+  .app{grid-template-columns:1fr}
+  main{padding:0}
+  body{background:#fff}
+  .card{border:1px solid #000;box-shadow:none}
+  .manual-view,.consent-view{margin:0;padding:0 !important}
+  .consent-view{background:#fff}
+  .consent-view .c-toolbar{display:none !important}
+  .consent-view .page{margin:0;box-shadow:none;padding:30px 24px;max-width:none;page-break-after:always}
+  .consent-view .emergency{border:2px solid #7f1d1d}
+  .consent-view .doc-head-bar{display:none !important}
+  .manual-view{background:#fff}
+  .manual-view h2{page-break-after:avoid}
+  .manual-view .m-step,.manual-view .m-callout,.manual-view table{page-break-inside:avoid}
+  .print-only{display:block !important}
+}
+.print-only{display:none}
+
+@media (max-width:720px){
+  .manual-view{padding:20px 14px;margin:-20px -16px 0}
+  .manual-view .m-toc ol{columns:1}
+  .manual-view .m-grid2{grid-template-columns:1fr}
+  .consent-view{margin:-20px -16px 0;padding:14px 10px}
+  .consent-view .page{padding:28px 20px;margin:12px 0}
+  .consent-view .two-col{grid-template-columns:1fr}
+  .consent-view .c-head{flex-direction:column;align-items:flex-start}
+  .consent-view .c-timeline-row{flex-direction:column;gap:2px}
+  .consent-view .c-timeline-row .when{width:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<!-- ============ SIDEBAR ============ -->
+<aside id="sidebar">
+  <div class="logo">SEOUL EYE CLINIC</div>
+  <div class="title">IVI 통합<br>시스템<span>·</span></div>
+  <nav>
+    <div class="nav-section">환자 관리</div>
+    <button class="active" data-view="dashboard"><span class="ic">📊</span><span>대시보드</span></button>
+    <button data-view="today"><span class="ic">📅</span><span>오늘 주사 리스트</span></button>
+    <button data-view="patients"><span class="ic">👥</span><span>환자 관리</span></button>
+    <button data-view="schedule"><span class="ic">📆</span><span>일정 보기</span></button>
+    <div class="nav-section">출력물</div>
+    <button data-view="consent"><span class="ic">📋</span><span>환자 안내·동의서</span></button>
+    <button data-view="nurseGuide"><span class="ic">🏥</span><span>간호사 시술실 가이드</span></button>
+    <div class="nav-section">임상 자료</div>
+    <button data-view="protocols"><span class="ic">💊</span><span>약제별 프로토콜</span></button>
+    <button data-view="manual"><span class="ic">📖</span><span>의료진 매뉴얼</span></button>
+    <div class="nav-section">시스템</div>
+    <button data-view="settings"><span class="ic">⚙️</span><span>설정·백업</span></button>
+  </nav>
+  <div class="sidebar-foot">
+    <div id="sync-indicator" style="margin-bottom:6px;font-size:11px">⚪ 초기화</div>
+    <span id="patient-count">0</span>명 · 주사 <span id="inj-count">0</span>건
+  </div>
+</aside>
+
+<!-- ============ MAIN ============ -->
+<main>
+  <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+  <div id="view-root"></div>
+</main>
+
+</div>
+
+<!-- ============ MODAL ============ -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal" id="modal-root"></div>
+</div>
+
+<script>
+/* ==========================================
+   API CONFIG — 배포 후 이 두 값을 채워 넣으세요
+   (Apps Script 배포 URL과 동일한 토큰)
+========================================== */
+const API_CONFIG = {
+  URL:   'https://script.google.com/macros/s/AKfycbwCVHY92q-WTcSi7yUZVUkT45am0co9f1u0H0prxBk0xs-MfxC_OboJd3so11FT0Nw_Kg/exec',
+  TOKEN: 'seoul-eye-ivi-2026-749EtpqDRLGRDq17STSch9IN',
+  SYNC_INTERVAL_MS: 60000,        // 백그라운드 동기화 주기 (60초)
+  RETRY_INTERVAL_MS: 10000        // 실패 시 재시도 주기 (10초)
+};
+
+/* ==========================================
+   DATA LAYER (localStorage 캐시 + 서버 동기화)
+========================================== */
+const STORAGE_KEY = 'ivi_manager_v2';
+const QUEUE_KEY   = 'ivi_sync_queue_v2';
+const META_KEY    = 'ivi_sync_meta_v2';
+
+const DB = {
+  patients: [],
+  version: 2
+};
+
+// 동기화 상태 관리
+const Sync = {
+  status:   'init',    // 'init' | 'online' | 'offline' | 'syncing' | 'error' | 'local-only'
+  lastPull: null,      // ISO string
+  lastPush: null,
+  queue:    [],        // pending operations
+  error:    null,
+  user:     '',
+  deviceId: '',
+  
+  isConfigured(){
+    return API_CONFIG.URL && API_CONFIG.URL.indexOf('script.google.com') >= 0;
+  },
+  
+  setStatus(s, err){
+    this.status = s;
+    this.error = err || null;
+    updateSyncIndicator();
+  }
+};
+
+function loadDB(){
+  // 1. localStorage에서 DB 불러오기
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(raw){
+    try{
+      const d = JSON.parse(raw);
+      Object.assign(DB, d);
+      if(!Array.isArray(DB.patients)) DB.patients = [];
+    }catch(e){console.error('DB parse err',e)}
+  } else {
+    // v1 → v2 마이그레이션 (기존 사용자 데이터 보존)
+    const v1 = localStorage.getItem('ivi_manager_v1');
+    if(v1){
+      try{
+        const d = JSON.parse(v1);
+        Object.assign(DB, d);
+        DB.version = 2;
+        if(!Array.isArray(DB.patients)) DB.patients = [];
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+      }catch(e){}
+    }
+  }
+  
+  // 2. 동기화 메타 정보 복원
+  const metaRaw = localStorage.getItem(META_KEY);
+  if(metaRaw){
+    try{
+      const m = JSON.parse(metaRaw);
+      Sync.lastPull = m.lastPull;
+      Sync.lastPush = m.lastPush;
+      Sync.user     = m.user || '';
+      Sync.deviceId = m.deviceId || '';
+    }catch(e){}
+  }
+  if(!Sync.deviceId){
+    Sync.deviceId = 'dev-' + Math.random().toString(36).slice(2, 10);
+    saveMeta();
+  }
+  
+  // 3. 대기 큐 복원
+  const qRaw = localStorage.getItem(QUEUE_KEY);
+  if(qRaw){
+    try{ Sync.queue = JSON.parse(qRaw) || []; }catch(e){ Sync.queue = []; }
+  }
+}
+
+function saveDB(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+  updateSidebarCounts();
+}
+
+function saveMeta(){
+  localStorage.setItem(META_KEY, JSON.stringify({
+    lastPull: Sync.lastPull,
+    lastPush: Sync.lastPush,
+    user: Sync.user,
+    deviceId: Sync.deviceId
+  }));
+}
+
+function saveQueue(){
+  localStorage.setItem(QUEUE_KEY, JSON.stringify(Sync.queue));
+}
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+
+/* ==========================================
+   API 호출 헬퍼
+========================================== */
+async function apiCall(params, timeoutMs){
+  if(!Sync.isConfigured()){
+    throw new Error('API 미설정');
+  }
+  const qs = new URLSearchParams({
+    ...params,
+    k: API_CONFIG.TOKEN,
+    user: Sync.user || '(익명)',
+    deviceId: Sync.deviceId
+  });
+  const url = API_CONFIG.URL + '?' + qs.toString();
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(()=>controller.abort(), timeoutMs || 30000);
+  
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || '서버 오류');
+    return json;
+  } catch(e) {
+    clearTimeout(timeoutId);
+    throw e;
+  }
+}
+
+/* ==========================================
+   PULL — 서버에서 전체 데이터 가져오기
+========================================== */
+async function pullFromServer(){
+  if(!Sync.isConfigured()){ Sync.setStatus('local-only'); return false; }
+  Sync.setStatus('syncing');
+  try {
+    const res = await apiCall({action:'listAll'});
+    // 서버 데이터로 로컬 덮어쓰기 (큐에 대기 중인 변경사항은 별도 유지)
+    DB.patients = (res.patients || []).map(p => ({
+      ...p,
+      // currentIntervalW 필드는 서버에서 관리하지 않으므로 로컬 기존값 유지
+      currentIntervalW: (DB.patients.find(x=>x.id===p.id) || {}).currentIntervalW || {},
+      injections: (p.injections || []).map(inj => {
+        // 주사 기록의 nextIntervalW 를 currentIntervalW로 반영
+        return inj;
+      })
+    }));
+    
+    // 환자별 currentIntervalW 재구성: 가장 최근 T&E 주사의 nextIntervalW를 사용
+    DB.patients.forEach(p => {
+      const byEye = {};
+      (p.injections || []).forEach(inj => {
+        if(inj.phase === 'TE' && inj.nextIntervalW){
+          byEye[inj.eye] = inj.nextIntervalW;
+        }
+      });
+      p.currentIntervalW = byEye;
+    });
+    
+    Sync.lastPull = res.serverTime || new Date().toISOString();
+    saveDB();
+    saveMeta();
+    Sync.setStatus('online');
+    return true;
+  } catch(e){
+    console.warn('Pull failed:', e);
+    Sync.setStatus(Sync.queue.length > 0 ? 'offline' : 'error', e.message);
+    return false;
+  }
+}
+
+/* ==========================================
+   PUSH — 큐에 담긴 변경사항을 서버로 전송
+========================================== */
+async function flushQueue(){
+  if(!Sync.isConfigured()) return;
+  if(Sync.queue.length === 0) return;
+  if(Sync.status === 'syncing') return; // 이미 동기화 중
+  
+  Sync.setStatus('syncing');
+  const originalLength = Sync.queue.length;
+  
+  while(Sync.queue.length > 0){
+    const op = Sync.queue[0];
+    try {
+      await apiCall(op.params);
+      // 성공 — 큐에서 제거
+      Sync.queue.shift();
+      saveQueue();
+    } catch(e){
+      console.warn('Push failed:', op, e);
+      Sync.setStatus('offline', e.message);
+      // 10초 후 재시도
+      setTimeout(()=>{
+        if(navigator.onLine) flushQueue();
+      }, API_CONFIG.RETRY_INTERVAL_MS);
+      updateSyncIndicator();
+      return false;
+    }
+  }
+  
+  Sync.lastPush = new Date().toISOString();
+  saveMeta();
+  Sync.setStatus('online');
+  if(originalLength > 0) updateSidebarCounts();
+  return true;
+}
+
+/* ==========================================
+   ENQUEUE — 변경사항을 큐에 추가 후 전송 시도
+========================================== */
+function enqueue(params, description){
+  if(!Sync.isConfigured()) return; // local-only 모드에서는 큐잉 불필요
+  Sync.queue.push({params, description, at: new Date().toISOString()});
+  saveQueue();
+  updateSyncIndicator();
+  // 비동기 전송 시도 (에러가 나도 앱 멈추지 않음)
+  flushQueue().catch(e => console.warn(e));
+}
+
+/* ==========================================
+   동기화 트리거 — 환자 저장 등 CRUD 함수에서 호출
+========================================== */
+function syncPatient(p){
+  // 서버로 보낼 때는 injections를 제외 (별도 관리)
+  const serverRecord = {...p};
+  delete serverRecord.injections;
+  delete serverRecord.currentIntervalW;
+  enqueue({action:'savePatient', data: JSON.stringify(serverRecord)}, `환자 저장: ${p.name}`);
+}
+function syncDeletePatient(id, name){
+  enqueue({action:'deletePatient', id:id}, `환자 삭제: ${name}`);
+}
+function syncInjection(inj, patientId){
+  enqueue({action:'saveInjection', data: JSON.stringify({...inj, patientId})}, `주사 기록: ${inj.date} ${inj.eye}`);
+}
+function syncDeleteInjection(injId){
+  enqueue({action:'deleteInjection', id:injId}, `주사 삭제: ${injId}`);
+}
+
+/* ==========================================
+   수동 동기화·초기화
+========================================== */
+async function manualSync(){
+  if(!Sync.isConfigured()){
+    alert('API 설정이 필요합니다. 설정·백업 화면에서 확인하세요.');
+    return;
+  }
+  await flushQueue();
+  await pullFromServer();
+  render();
+}
+
+async function initialize(){
+  loadDB();
+  updateSidebarCounts();
+  render();
+  
+  if(!Sync.isConfigured()){
+    Sync.setStatus('local-only');
+    return;
+  }
+  
+  // 큐 우선 전송 후 서버 최신본 가져오기
+  if(Sync.queue.length > 0){
+    await flushQueue();
+  }
+  await pullFromServer();
+  render();
+  
+  // 주기적 동기화 타이머
+  setInterval(async ()=>{
+    if(!navigator.onLine) return;
+    if(Sync.queue.length > 0) await flushQueue();
+    else await pullFromServer();
+  }, API_CONFIG.SYNC_INTERVAL_MS);
+}
+
+// 온라인 상태 변경 감지
+window.addEventListener('online', ()=>{
+  if(Sync.isConfigured()){
+    flushQueue().then(()=>pullFromServer());
+  }
+});
+window.addEventListener('offline', ()=>{
+  Sync.setStatus('offline');
+});
+
+/* ==========================================
+   동기화 상태 표시 갱신
+========================================== */
+function updateSyncIndicator(){
+  const el = document.getElementById('sync-indicator');
+  if(!el) return;
+  const statusMap = {
+    'init':       {dot:'⚪', label:'초기화', color:'#94a3b8'},
+    'online':     {dot:'🟢', label:'동기화됨', color:'#10b981'},
+    'syncing':    {dot:'🔄', label:'동기화 중', color:'#3b82f6'},
+    'offline':    {dot:'🟠', label:'오프라인 (대기 '+Sync.queue.length+'건)', color:'#f59e0b'},
+    'error':      {dot:'🔴', label:'연결 오류', color:'#ef4444'},
+    'local-only': {dot:'⚫', label:'로컬 전용', color:'#64748b'}
+  };
+  const s = statusMap[Sync.status] || statusMap.init;
+  el.innerHTML = `<span style="color:${s.color}">${s.dot}</span> <span style="color:${s.color}">${s.label}</span>`;
+}
+
+/* ==========================================
+   PROTOCOL DEFINITIONS
+========================================== */
+const DRUGS = {
+  'Eylea2':{name:'Eylea 2mg', full:'Aflibercept 2mg/0.05mL', color:'blue',
+    loadingDefault:{wAMD:3, DME:5, BRVO:6, CRVO:6, mCNV:1, other:3},
+    loadIntervalW:4, teMin:4, teMax:12, teStep:2, note:'가장 사용 많음·근거 풍부'},
+  'EyleaHD':{name:'Eylea HD', full:'Aflibercept 8mg/0.07mL', color:'purple',
+    loadingDefault:{wAMD:3, DME:3, other:3},
+    loadIntervalW:4, teMin:8, teMax:16, teStep:4, note:'고용량·장기 간격 가능'},
+  'Vabysmo':{name:'Vabysmo', full:'Faricimab 6mg/0.05mL', color:'green',
+    loadingDefault:{wAMD:4, DME:4, BRVO:6, CRVO:6, other:4},
+    loadIntervalW:4, teMin:8, teMax:16, teStep:4, note:'이중특이항체·장기 간격 유리'},
+  'Lucentis':{name:'Lucentis', full:'Ranibizumab 0.5mg/0.05mL', color:'pink',
+    loadingDefault:{wAMD:3, DME:3, BRVO:3, CRVO:3, mCNV:1, other:3},
+    loadIntervalW:4, teMin:4, teMax:12, teStep:2, note:'분자량 작아 전신 노출 적음'},
+  'Beovu':{name:'Beovu', full:'Brolucizumab 6mg/0.05mL', color:'amber',
+    loadingDefault:{wAMD:3, other:3},
+    loadIntervalW:4, teMin:8, teMax:12, teStep:2, note:'IOI·혈관염 위험 — 증상 즉시 중단'},
+  'Ozurdex':{name:'Ozurdex', full:'Dexamethasone 0.7mg implant', color:'slate',
+    loadingDefault:{DME:1, BRVO:1, CRVO:1, uveitis:1, other:1},
+    loadIntervalW:16, teMin:12, teMax:24, teStep:4, note:'스테로이드·IOP↑·백내장 주의'}
+};
+
+const DIAGNOSES = {
+  'wAMD':'신생혈관성 황반변성', 'DME':'당뇨황반부종',
+  'BRVO':'망막분지정맥폐쇄(BRVO)', 'CRVO':'망막중심정맥폐쇄(CRVO)',
+  'mCNV':'근시성 맥락막신생혈관', 'uveitis':'비감염성 포도막염', 'other':'기타'
+};
+const EYES = {'OD':'우안(OD)', 'OS':'좌안(OS)', 'OU':'양안(OU)'};
+const STATUS = {
+  'active':{label:'치료 중', cls:'green'},
+  'paused':{label:'관찰(유예)', cls:'amber'},
+  'stopped':{label:'치료 종료', cls:'slate'}
+};
+
+/* ==========================================
+   SCHEDULE LOGIC
+========================================== */
+function getProtocol(drug, diagnosis){
+  const d = DRUGS[drug];
+  if(!d) return null;
+  const load = d.loadingDefault[diagnosis] ?? d.loadingDefault.other ?? 3;
+  return {drug:d, loadingCount:load};
+}
+function injectionsForEye(patient, eye){
+  return (patient.injections||[]).filter(i=>i.eye===eye).sort((a,b)=>a.date.localeCompare(b.date));
+}
+function phaseForEye(patient, eye){
+  const proto = getProtocol(patient.drug, patient.diagnosis);
+  const count = injectionsForEye(patient, eye).length;
+  if(count < proto.loadingCount) return {phase:'loading', next:count+1, total:proto.loadingCount};
+  return {phase:'TE', intervalW: patient.currentIntervalW?.[eye] || proto.drug.teMin};
+}
+function addDays(dateStr, days){
+  const d = new Date(dateStr+'T00:00:00');
+  d.setDate(d.getDate()+days);
+  return d.toISOString().slice(0,10);
+}
+function todayStr(){return new Date().toISOString().slice(0,10)}
+function daysBetween(a,b){
+  const d1 = new Date(a+'T00:00:00'); const d2 = new Date(b+'T00:00:00');
+  return Math.floor((d2-d1)/(1000*60*60*24));
+}
+function nextScheduledDate(patient, eye){
+  const injs = injectionsForEye(patient, eye);
+  if(injs.length===0){
+    // no injection yet → use registeredAt as first expected date
+    return patient.startDate || todayStr();
+  }
+  const last = injs[injs.length-1];
+  const phase = phaseForEye(patient, eye);
+  const proto = getProtocol(patient.drug, patient.diagnosis);
+  if(phase.phase==='loading'){
+    return addDays(last.date, proto.drug.loadIntervalW*7);
+  }else{
+    // T&E: use last.nextIntervalW (or current interval)
+    const w = last.nextIntervalW || phase.intervalW;
+    return addDays(last.date, w*7);
+  }
+}
+function getEyesForPatient(p){
+  if(p.eye==='OU') return ['OD','OS'];
+  return [p.eye];
+}
+function patientOverallStatus(p){
+  if(p.status!=='active') return null;
+  const eyes = getEyesForPatient(p);
+  let minDaysToNext = Infinity;
+  let nextDate = null;
+  eyes.forEach(e=>{
+    const d = nextScheduledDate(p, e);
+    const diff = daysBetween(todayStr(), d);
+    if(diff < minDaysToNext){minDaysToNext = diff; nextDate = d;}
+  });
+  return {nextDate, daysToNext:minDaysToNext};
+}
+
+/* ==========================================
+   UI HELPERS
+========================================== */
+function el(html){const t=document.createElement('template');t.innerHTML=html.trim();return t.content.firstChild}
+function fmtDate(s){
+  if(!s) return '-';
+  const d = new Date(s+'T00:00:00');
+  const day = ['일','월','화','수','목','금','토'][d.getDay()];
+  return `${d.getMonth()+1}/${d.getDate()} (${day})`;
+}
+function fmtDateFull(s){
+  if(!s) return '-';
+  const d = new Date(s+'T00:00:00');
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function diagnosisName(d){return DIAGNOSES[d]||d}
+function eyeName(e){return EYES[e]||e}
+
+function openModal(html){
+  const root = document.getElementById('modal-root');
+  root.innerHTML = html;
+  document.getElementById('modal-bg').classList.add('open');
+}
+function closeModal(){document.getElementById('modal-bg').classList.remove('open')}
+document.getElementById('modal-bg').addEventListener('click', e=>{if(e.target.id==='modal-bg') closeModal()});
+
+function toggleMenu(){document.getElementById('sidebar').classList.toggle('open')}
+
+function updateSidebarCounts(){
+  document.getElementById('patient-count').textContent = DB.patients.length;
+  const total = DB.patients.reduce((s,p)=>s+(p.injections||[]).length, 0);
+  document.getElementById('inj-count').textContent = total;
+}
+
+/* ==========================================
+   NAVIGATION
+========================================== */
+let currentView = 'dashboard';
+let consentPatientId = null; // 동의서 뷰에서 선택된 환자
+
+function setView(v){
+  currentView = v;
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active', b.dataset.view===v));
+  if(window.innerWidth<=900) document.getElementById('sidebar').classList.remove('open');
+  render();
+}
+document.querySelectorAll('nav button[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+
+/* ==========================================
+   RENDER: DASHBOARD
+========================================== */
+function renderDashboard(){
+  const root = document.getElementById('view-root');
+  const today = todayStr();
+  const active = DB.patients.filter(p=>p.status==='active');
+  
+  const withSchedule = active.map(p=>{
+    const s = patientOverallStatus(p);
+    return {p, ...s};
+  });
+  const overdue = withSchedule.filter(x=>x.daysToNext < 0);
+  const todayList = withSchedule.filter(x=>x.daysToNext === 0);
+  const thisWeek = withSchedule.filter(x=>x.daysToNext > 0 && x.daysToNext <= 7);
+  const nextWeek = withSchedule.filter(x=>x.daysToNext > 7 && x.daysToNext <= 14);
+  const totalInj = DB.patients.reduce((s,p)=>s+(p.injections||[]).length, 0);
+  const thisMonthInj = DB.patients.reduce((s,p)=>{
+    return s + (p.injections||[]).filter(i=>i.date.slice(0,7)===today.slice(0,7)).length;
+  }, 0);
+
+  root.innerHTML = `
+    <div class="page-head">
+      <div>
+        <h1>대시보드</h1>
+        <div class="page-sub">${fmtDateFull(today)} · 오늘 상황 요약</div>
+      </div>
+      <button class="btn" onclick="openPatientForm()">＋ 신규 환자 등록</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat ${overdue.length>0?'danger':''}">
+        <div class="lbl">지연 환자</div>
+        <div class="val">${overdue.length}</div>
+        <div class="delta">예정일 경과</div>
+      </div>
+      <div class="stat accent">
+        <div class="lbl">오늘 주사 예정</div>
+        <div class="val">${todayList.length}</div>
+        <div class="delta">Click "오늘 리스트"</div>
+      </div>
+      <div class="stat warn">
+        <div class="lbl">이번주 (7일 내)</div>
+        <div class="val">${thisWeek.length}</div>
+        <div class="delta">내일 ~ +7일</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">치료 중 환자</div>
+        <div class="val">${active.length}</div>
+        <div class="delta">전체 ${DB.patients.length}명</div>
+      </div>
+      <div class="stat ok">
+        <div class="lbl">이번달 주사 건수</div>
+        <div class="val">${thisMonthInj}</div>
+        <div class="delta">누적 ${totalInj}건</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>🚨 지연 환자 (${overdue.length}명)</h3>
+        ${overdue.length>0?'<span class="tiny text-muted">내원 독려 필요</span>':''}
+      </div>
+      ${overdue.length===0?'<div class="empty">지연 환자 없음</div>':
+        renderScheduleTable(overdue, true)}
+    </div>
+
+    <div class="card mt-20">
+      <div class="card-head">
+        <h3>📅 오늘 주사 예정 (${todayList.length}명)</h3>
+        ${todayList.length>0?`<button class="btn sm ghost" onclick="setView('today')">전체 보기 →</button>`:''}
+      </div>
+      ${todayList.length===0?'<div class="empty">오늘 예정된 주사가 없습니다</div>':
+        renderScheduleTable(todayList, false)}
+    </div>
+
+    <div class="card mt-20">
+      <div class="card-head">
+        <h3>📆 금주 예정 (${thisWeek.length}명) · 내일 ~ 7일 이내</h3>
+      </div>
+      ${thisWeek.length===0?'<div class="empty">금주 예정 없음</div>':
+        renderScheduleTable(thisWeek, false)}
+    </div>
+  `;
+}
+
+function renderScheduleTable(list, showDaysOver){
+  list.sort((a,b)=>a.nextDate.localeCompare(b.nextDate));
+  return `
+    <table class="tbl">
+      <thead><tr>
+        <th>예정일</th><th>차트#</th><th>환자명</th><th>눈</th>
+        <th>진단</th><th>약제</th><th>단계</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${list.map(({p, nextDate, daysToNext})=>{
+          const eyes = getEyesForPatient(p);
+          return eyes.map(e=>{
+            const nd = nextScheduledDate(p,e);
+            const diff = daysBetween(todayStr(), nd);
+            if(list === thisWeek && diff !== daysToNext) return '';
+            const phase = phaseForEye(p,e);
+            const phaseLabel = phase.phase==='loading'
+              ? `Loading ${phase.next}/${phase.total}`
+              : `T&E ${phase.intervalW || DRUGS[p.drug].teMin}w`;
+            const rowCls = diff<0?'row-overdue':(diff===0?'row-today':'');
+            return `<tr class="${rowCls} clickable" onclick="openPatientDetail('${p.id}')">
+              <td><b>${fmtDate(nd)}</b>${diff<0?` <span class="badge red">${-diff}일 지연</span>`:''}${diff===0?' <span class="badge blue">오늘</span>':''}</td>
+              <td>${p.chartNo||'-'}</td>
+              <td>${p.name}</td>
+              <td><span class="badge slate">${e}</span></td>
+              <td>${diagnosisName(p.diagnosis)}</td>
+              <td><span class="badge ${DRUGS[p.drug].color}">${DRUGS[p.drug].name}</span></td>
+              <td>${phaseLabel}</td>
+              <td class="text-right">
+                <button class="btn sm ok" onclick="event.stopPropagation();openInjectionForm('${p.id}','${e}')">주사 기록</button>
+              </td>
+            </tr>`;
+          }).join('');
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+/* ==========================================
+   RENDER: TODAY
+========================================== */
+function renderToday(){
+  const root = document.getElementById('view-root');
+  const today = todayStr();
+  const active = DB.patients.filter(p=>p.status==='active');
+  const list = [];
+  active.forEach(p=>{
+    getEyesForPatient(p).forEach(e=>{
+      const nd = nextScheduledDate(p,e);
+      const diff = daysBetween(today, nd);
+      if(diff <= 0){ // today or overdue
+        list.push({p, eye:e, nextDate:nd, diff});
+      }
+    });
+  });
+  list.sort((a,b)=>a.diff - b.diff || a.p.name.localeCompare(b.p.name));
+
+  root.innerHTML = `
+    <div class="page-head">
+      <div>
+        <h1>오늘 주사 리스트</h1>
+        <div class="page-sub">${fmtDateFull(today)} · 총 ${list.length}건 (지연 포함)</div>
+      </div>
+      <div class="flex">
+        <button class="btn ghost" onclick="window.print()">🖨 인쇄</button>
+        <button class="btn" onclick="openPatientForm()">＋ 신규 환자</button>
+      </div>
+    </div>
+
+    ${list.length===0?`<div class="card"><div class="empty">오늘 예정된 주사가 없습니다.<br><br>
+      <button class="btn" onclick="setView('dashboard')">대시보드로 돌아가기</button></div></div>`:
+      `<div class="card">
+        <table class="tbl">
+          <thead><tr>
+            <th>순서</th><th>차트#</th><th>환자</th><th>나이</th><th>눈</th>
+            <th>진단</th><th>약제</th><th>단계</th><th>예정일</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${list.map((item,idx)=>{
+              const {p, eye, nextDate, diff} = item;
+              const phase = phaseForEye(p,eye);
+              const phaseLabel = phase.phase==='loading'
+                ? `Loading ${phase.next}/${phase.total}`
+                : `T&E ${phase.intervalW || DRUGS[p.drug].teMin}w`;
+              const age = p.birth?(new Date().getFullYear() - parseInt(p.birth.slice(0,4))):'-';
+              return `<tr class="${diff<0?'row-overdue':'row-today'} clickable" onclick="openPatientDetail('${p.id}')">
+                <td><b>${idx+1}</b></td>
+                <td>${p.chartNo||'-'}</td>
+                <td><b>${p.name}</b></td>
+                <td>${age}</td>
+                <td><span class="badge slate">${eye}</span></td>
+                <td>${diagnosisName(p.diagnosis)}</td>
+                <td><span class="badge ${DRUGS[p.drug].color}">${DRUGS[p.drug].name}</span></td>
+                <td>${phaseLabel}</td>
+                <td>${fmtDate(nextDate)}${diff<0?` <span class="badge red">${-diff}일</span>`:''}</td>
+                <td class="text-right"><button class="btn sm ok" onclick="event.stopPropagation();openInjectionForm('${p.id}','${eye}')">주사 기록</button></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`
+    }
+  `;
+}
+
+/* ==========================================
+   RENDER: PATIENTS LIST
+========================================== */
+let patientFilter = {q:'', status:'all', drug:'all'};
+function renderPatients(){
+  const root = document.getElementById('view-root');
+  const q = patientFilter.q.toLowerCase();
+  let list = DB.patients.filter(p=>{
+    if(patientFilter.status!=='all' && p.status!==patientFilter.status) return false;
+    if(patientFilter.drug!=='all' && p.drug!==patientFilter.drug) return false;
+    if(q){
+      const hay = `${p.name} ${p.chartNo||''} ${p.birth||''}`.toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  list.sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  
+  root.innerHTML = `
+    <div class="page-head">
+      <div>
+        <h1>환자 관리</h1>
+        <div class="page-sub">전체 ${DB.patients.length}명 · 표시 ${list.length}명</div>
+      </div>
+      <button class="btn" onclick="openPatientForm()">＋ 신규 환자 등록</button>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" placeholder="이름·차트번호·생년월일 검색" 
+        value="${patientFilter.q}" 
+        oninput="patientFilter.q=this.value; renderPatients()">
+      <select onchange="patientFilter.status=this.value; renderPatients()">
+        <option value="all">상태: 전체</option>
+        <option value="active" ${patientFilter.status==='active'?'selected':''}>치료 중</option>
+        <option value="paused" ${patientFilter.status==='paused'?'selected':''}>관찰(유예)</option>
+        <option value="stopped" ${patientFilter.status==='stopped'?'selected':''}>치료 종료</option>
+      </select>
+      <select onchange="patientFilter.drug=this.value; renderPatients()">
+        <option value="all">약제: 전체</option>
+        ${Object.entries(DRUGS).map(([k,v])=>`<option value="${k}" ${patientFilter.drug===k?'selected':''}>${v.name}</option>`).join('')}
+      </select>
+      <div class="spacer"></div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden">
+      ${list.length===0?'<div class="empty">조건에 맞는 환자가 없습니다</div>':
+      `<table class="tbl">
+        <thead><tr>
+          <th>차트#</th><th>환자</th><th>생년월일</th><th>눈</th>
+          <th>진단</th><th>약제</th><th>단계</th><th>주사</th>
+          <th>다음 예정</th><th>상태</th>
+        </tr></thead>
+        <tbody>
+          ${list.map(p=>{
+            const eyes = getEyesForPatient(p);
+            const primaryEye = eyes[0];
+            const phase = phaseForEye(p, primaryEye);
+            const phaseLabel = phase.phase==='loading'
+              ? `Loading ${phase.next-1}/${phase.total}`
+              : `T&E ${phase.intervalW || DRUGS[p.drug].teMin}w`;
+            const totalInj = (p.injections||[]).length;
+            const s = patientOverallStatus(p);
+            let nextCell = '-';
+            if(p.status==='active' && s){
+              const days = s.daysToNext;
+              const badge = days<0?`<span class="badge red">${-days}일 지연</span>`:
+                days===0?`<span class="badge blue">오늘</span>`:
+                days<=7?`<span class="badge amber">${days}일 후</span>`:'';
+              nextCell = `${fmtDate(s.nextDate)} ${badge}`;
+            }
+            return `<tr class="clickable" onclick="openPatientDetail('${p.id}')">
+              <td>${p.chartNo||'-'}</td>
+              <td><b>${p.name}</b></td>
+              <td class="tiny">${p.birth||'-'}</td>
+              <td><span class="badge slate">${p.eye}</span></td>
+              <td>${diagnosisName(p.diagnosis)}</td>
+              <td><span class="badge ${DRUGS[p.drug].color}">${DRUGS[p.drug].name}</span></td>
+              <td class="tiny">${phaseLabel}</td>
+              <td>${totalInj}회</td>
+              <td class="tiny">${nextCell}</td>
+              <td><span class="badge ${STATUS[p.status].cls}">${STATUS[p.status].label}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`}
+    </div>
+  `;
+}
+
+/* ==========================================
+   RENDER: PATIENT DETAIL
+========================================== */
+function openPatientDetail(id){
+  const p = DB.patients.find(x=>x.id===id);
+  if(!p) return;
+  currentView = 'detail';
+  renderPatientDetail(p);
+}
+function renderPatientDetail(p){
+  const root = document.getElementById('view-root');
+  const eyes = getEyesForPatient(p);
+  
+  root.innerHTML = `
+    <div class="page-head">
+      <div class="flex" style="gap:14px">
+        <button class="btn ghost sm" onclick="setView('patients')">← 환자 목록</button>
+        <div>
+          <h1>${p.name} <span class="text-muted" style="font-size:14px;font-weight:500">${p.chartNo||''}</span></h1>
+          <div class="page-sub">${p.birth||''} · ${eyeName(p.eye)} · ${diagnosisName(p.diagnosis)}</div>
+        </div>
+      </div>
+      <div class="flex">
+        <button class="btn ok" onclick="openConsentForPatient('${p.id}')">📋 동의서 작성</button>
+        <button class="btn ghost" onclick="openPatientForm('${p.id}')">정보 수정</button>
+        <button class="btn danger ghost" onclick="confirmDelete('${p.id}')">삭제</button>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <div>
+        <div class="card">
+          <h3>환자 정보</h3>
+          <div class="info-row"><span class="lbl">상태</span><span class="val"><span class="badge ${STATUS[p.status].cls}">${STATUS[p.status].label}</span></span></div>
+          <div class="info-row"><span class="lbl">진단</span><span class="val">${diagnosisName(p.diagnosis)}</span></div>
+          <div class="info-row"><span class="lbl">사용 약제</span><span class="val"><span class="badge ${DRUGS[p.drug].color}">${DRUGS[p.drug].name}</span></span></div>
+          <div class="info-row"><span class="lbl">눈</span><span class="val">${eyeName(p.eye)}</span></div>
+          <div class="info-row"><span class="lbl">DM/HTN</span><span class="val">${p.dm?'DM ':''}${p.htn?'HTN':''}${!p.dm&&!p.htn?'-':''}</span></div>
+          <div class="info-row"><span class="lbl">항응고제</span><span class="val">${p.antiCoag?'복용':'없음'}</span></div>
+          <div class="info-row"><span class="lbl">알레르기</span><span class="val">${p.allergy||'없음'}</span></div>
+          <div class="info-row"><span class="lbl">등록일</span><span class="val">${p.startDate||'-'}</span></div>
+          ${p.notes?`<hr><div class="tiny" style="color:var(--ink2);white-space:pre-wrap">${p.notes}</div>`:''}
+        </div>
+
+        <div class="mt-12 flex" style="gap:6px;flex-wrap:wrap">
+          <button class="btn sm ghost" onclick="setPatientStatus('${p.id}','active')">치료 중</button>
+          <button class="btn sm ghost" onclick="setPatientStatus('${p.id}','paused')">관찰 유예</button>
+          <button class="btn sm ghost" onclick="setPatientStatus('${p.id}','stopped')">치료 종료</button>
+        </div>
+      </div>
+
+      <div>
+        ${eyes.map(e=>{
+          const injs = injectionsForEye(p, e);
+          const phase = phaseForEye(p, e);
+          const nd = nextScheduledDate(p, e);
+          const diff = p.status==='active'? daysBetween(todayStr(), nd) : null;
+          const proto = getProtocol(p.drug, p.diagnosis);
+          
+          let scheduleCls = '';
+          let scheduleLbl = '다음 주사 예정';
+          let subText = '';
+          if(p.status!=='active'){
+            scheduleCls='stopped';
+            scheduleLbl=STATUS[p.status].label;
+            subText = '';
+          }else if(diff<0){
+            scheduleCls='overdue';
+            scheduleLbl=`지연 ${-diff}일`;
+          }else if(diff===0){
+            subText='오늘입니다';
+          }else{
+            subText=`${diff}일 후 · ${phase.phase==='loading'?`Loading ${phase.next}/${phase.total}`:`T&E ${phase.intervalW||proto.drug.teMin}주 간격`}`;
+          }
+          
+          return `
+            <div class="schedule-box ${scheduleCls}" style="margin-bottom:14px">
+              <div class="lbl">${eye.OD===e?'우안 (OD)':'좌안 (OS)'} · ${scheduleLbl}</div>
+              <div class="date">${fmtDateFull(nd)}</div>
+              <div class="sub">${subText}</div>
+              <div class="mt-12">
+                ${p.status==='active'?`<button class="btn ok sm" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4)" onclick="openInjectionForm('${p.id}','${e}')">＋ 주사 기록</button>`:''}
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <h3>${e==='OD'?'우안':'좌안'} 주사 기록 (${injs.length}회)</h3>
+              </div>
+              ${injs.length===0?'<div class="empty">아직 주사 기록이 없습니다</div>':
+                `<div class="inj-timeline">${injs.map((inj,idx)=>{
+                  const complication = inj.complication && inj.complication!=='none';
+                  return `<div class="inj-item ${complication?'complication':''}">
+                    <div class="flex" style="gap:10px"><div class="no">${idx+1}</div>
+                      <div class="date-blk">${fmtDate(inj.date)}<div class="d">${fmtDateFull(inj.date)}</div></div>
+                    </div>
+                    <div class="meta">
+                      <span>💊 <b>${DRUGS[inj.drug||p.drug]?.name||inj.drug}</b></span>
+                      ${inj.iopPre!=null?`<span>IOP: ${inj.iopPre}→${inj.iopPost||'-'}</span>`:''}
+                      ${inj.vaPre?`<span>BCVA: ${inj.vaPre}→${inj.vaPost||'-'}</span>`:''}
+                      ${inj.phase?`<span class="badge ${inj.phase==='loading'?'amber':'blue'}">${inj.phase==='loading'?`Loading ${inj.loadNum}/${inj.loadTotal}`:`T&E ${inj.nextIntervalW||'-'}w`}</span>`:''}
+                      ${complication?`<span class="badge red">⚠ ${inj.complication}</span>`:''}
+                      ${inj.notes?`<div style="width:100%;margin-top:4px;color:var(--muted);font-size:12px">📝 ${inj.notes}</div>`:''}
+                    </div>
+                    <div><button class="btn sm ghost" onclick="deleteInjection('${p.id}','${inj.id}')">삭제</button></div>
+                  </div>`;
+                }).join('')}</div>`
+              }
+            </div>
+          `;
+        }).join('<div style="height:20px"></div>')}
+      </div>
+    </div>
+  `;
+}
+
+/* ==========================================
+   FORMS
+========================================== */
+function openPatientForm(editId){
+  const p = editId ? DB.patients.find(x=>x.id===editId) : null;
+  const isEdit = !!p;
+  
+  openModal(`
+    <div class="modal-head">
+      <h2>${isEdit?'환자 정보 수정':'신규 환자 등록'}</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="patient-form" onsubmit="event.preventDefault(); savePatient('${editId||''}')">
+        <div class="form-grid">
+          <div class="field"><label>차트번호</label>
+            <input type="text" name="chartNo" value="${p?.chartNo||''}" placeholder="예: 12345"></div>
+          <div class="field"><label>환자명 <span class="req">*</span></label>
+            <input type="text" name="name" required value="${p?.name||''}" placeholder="홍길동"></div>
+          <div class="field"><label>생년월일</label>
+            <input type="text" name="birth" value="${p?.birth||''}" placeholder="1950-01-15"></div>
+          <div class="field"><label>연락처</label>
+            <input type="text" name="phone" value="${p?.phone||''}" placeholder="010-"></div>
+          
+          <div class="field full"><label>주사 눈 <span class="req">*</span></label>
+            <div class="radio-group" data-group="eye">
+              ${['OD','OS','OU'].map(e=>`<label class="${(p?.eye||'OD')===e?'checked':''}"><input type="radio" name="eye" value="${e}" ${(p?.eye||'OD')===e?'checked':''}>${EYES[e]}</label>`).join('')}
+            </div>
+          </div>
+
+          <div class="field"><label>진단 <span class="req">*</span></label>
+            <select name="diagnosis" required onchange="updateDrugOptions(this.value)">
+              ${Object.entries(DIAGNOSES).map(([k,v])=>`<option value="${k}" ${p?.diagnosis===k?'selected':''}>${v}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field"><label>사용 약제 <span class="req">*</span></label>
+            <select name="drug" required id="drug-select">
+              ${Object.entries(DRUGS).map(([k,v])=>`<option value="${k}" ${p?.drug===k?'selected':''}>${v.name} — ${v.full}</option>`).join('')}
+            </select>
+            <span class="hint" id="drug-hint">${p?.drug?DRUGS[p.drug].note:''}</span>
+          </div>
+
+          <div class="field"><label>등록일 (첫 주사 예정일) <span class="req">*</span></label>
+            <input type="date" name="startDate" required value="${p?.startDate||todayStr()}"></div>
+          <div class="field"><label>상태</label>
+            <select name="status">
+              ${Object.entries(STATUS).map(([k,v])=>`<option value="${k}" ${(p?.status||'active')===k?'selected':''}>${v.label}</option>`).join('')}
+            </select>
+          </div>
+
+          <div class="field full"><label>동반질환 / 특이사항</label>
+            <div style="display:flex;gap:16px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+              <label class="tiny"><input type="checkbox" name="dm" ${p?.dm?'checked':''}> 당뇨(DM)</label>
+              <label class="tiny"><input type="checkbox" name="htn" ${p?.htn?'checked':''}> 고혈압(HTN)</label>
+              <label class="tiny"><input type="checkbox" name="antiCoag" ${p?.antiCoag?'checked':''}> 항응고·항혈소판제 복용</label>
+            </div>
+          </div>
+
+          <div class="field"><label>알레르기</label>
+            <input type="text" name="allergy" value="${p?.allergy||''}" placeholder="예: 요오드, 페니실린"></div>
+          <div class="field"><label>한눈 여부</label>
+            <select name="monocular">
+              <option value="">-</option>
+              <option value="yes" ${p?.monocular==='yes'?'selected':''}>한눈(해당 눈 치료)</option>
+              <option value="no" ${p?.monocular==='no'?'selected':''}>양안 시력 있음</option>
+            </select>
+          </div>
+
+          <div class="field full"><label>메모</label>
+            <textarea name="notes" placeholder="초진 소견, 과거 치료 이력 등">${p?.notes||''}</textarea></div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" onclick="closeModal()">취소</button>
+      <button class="btn" onclick="document.getElementById('patient-form').requestSubmit()">${isEdit?'수정 저장':'등록'}</button>
+    </div>
+  `);
+  
+  setupRadioGroups();
+  document.getElementById('drug-select').addEventListener('change', e=>{
+    document.getElementById('drug-hint').textContent = DRUGS[e.target.value]?.note || '';
+  });
+}
+
+function setupRadioGroups(){
+  document.querySelectorAll('.radio-group').forEach(g=>{
+    g.querySelectorAll('label').forEach(l=>{
+      l.addEventListener('click', ()=>{
+        g.querySelectorAll('label').forEach(x=>x.classList.remove('checked'));
+        l.classList.add('checked');
+      });
+    });
+  });
+}
+
+function savePatient(editId){
+  const form = document.getElementById('patient-form');
+  const d = Object.fromEntries(new FormData(form));
+  d.dm = form.dm.checked;
+  d.htn = form.htn.checked;
+  d.antiCoag = form.antiCoag.checked;
+
+  let p;
+  if(editId){
+    p = DB.patients.find(x=>x.id===editId);
+    Object.assign(p, d);
+  }else{
+    p = {
+      id: uid(),
+      injections: [],
+      currentIntervalW: {},
+      ...d
+    };
+    DB.patients.push(p);
+  }
+  saveDB();
+  syncPatient(p);
+  closeModal();
+  if(editId) renderPatientDetail(DB.patients.find(x=>x.id===editId));
+  else render();
+}
+
+/* ==========================================
+   INJECTION FORM
+========================================== */
+function openInjectionForm(patientId, eye){
+  const p = DB.patients.find(x=>x.id===patientId);
+  if(!p) return;
+  const phase = phaseForEye(p, eye);
+  const proto = getProtocol(p.drug, p.diagnosis);
+  const isLoading = phase.phase==='loading';
+  
+  let intervalOptions = '';
+  if(!isLoading){
+    const min = proto.drug.teMin;
+    const max = proto.drug.teMax;
+    const step = proto.drug.teStep;
+    const current = phase.intervalW || min;
+    for(let w=min; w<=max; w+=step){
+      const tag = w===current?'(현재)':w<current?'(단축)':'(연장)';
+      intervalOptions += `<option value="${w}" ${w===current?'selected':''}>${w}주 ${tag}</option>`;
+    }
+  }
+
+  openModal(`
+    <div class="modal-head">
+      <h2>주사 기록 — ${p.name} ${eye==='OD'?'(우안)':'(좌안)'}</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="card" style="background:var(--info-bg);border-color:var(--info);margin-bottom:16px;padding:14px">
+        <div style="font-size:13px;color:var(--info);font-weight:600;margin-bottom:4px">현재 단계</div>
+        <div style="font-weight:700">${isLoading?`Loading 단계 · ${phase.next}회차 / 전체 ${phase.total}회`:`T&E 단계 · 현재 ${phase.intervalW||proto.drug.teMin}주 간격`}</div>
+        <div class="tiny text-muted mt-12">${isLoading?`Loading 완료까지 ${phase.total - phase.next + 1}회 남음 · 다음 간격 ${proto.drug.loadIntervalW}주`:`간격 범위: ${proto.drug.teMin}–${proto.drug.teMax}주 (2주 단위 조정)`}</div>
+      </div>
+
+      <form id="inj-form" onsubmit="event.preventDefault(); saveInjection('${patientId}','${eye}')">
+        <div class="form-grid cols-3">
+          <div class="field"><label>주사일 <span class="req">*</span></label>
+            <input type="date" name="date" required value="${todayStr()}"></div>
+          <div class="field"><label>약제</label>
+            <select name="drug">
+              ${Object.entries(DRUGS).map(([k,v])=>`<option value="${k}" ${p.drug===k?'selected':''}>${v.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field"><label>Lot No.</label>
+            <input type="text" name="lot" placeholder="약제 lot"></div>
+        </div>
+
+        <hr>
+        <div class="tiny text-muted">시술 전후 평가</div>
+        <div class="form-grid cols-4 mt-12">
+          <div class="field"><label>IOP 전 (mmHg)</label>
+            <input type="number" name="iopPre" min="0" max="80"></div>
+          <div class="field"><label>IOP 후 (mmHg)</label>
+            <input type="number" name="iopPost" min="0" max="80"></div>
+          <div class="field"><label>BCVA 전</label>
+            <input type="text" name="vaPre" placeholder="예: 0.5"></div>
+          <div class="field"><label>BCVA 후</label>
+            <input type="text" name="vaPost" placeholder="예: 0.5"></div>
+        </div>
+
+        <hr>
+        <div class="tiny text-muted">다음 방문 계획</div>
+        ${isLoading?`
+          <div class="form-grid mt-12">
+            <div class="field full">
+              <label>다음 예정일</label>
+              <input type="date" name="nextDate" required value="${addDays(todayStr(), proto.drug.loadIntervalW*7)}">
+              <span class="hint">Loading 간격 ${proto.drug.loadIntervalW}주 기준 자동 계산됨</span>
+            </div>
+          </div>
+        `:`
+          <div class="form-grid cols-3 mt-12">
+            <div class="field">
+              <label>치료 반응 평가 <span class="req">*</span></label>
+              <select name="response" required onchange="adjustTEInterval(this,'${patientId}','${eye}')">
+                <option value="">선택</option>
+                <option value="stable">안정 (fluid 없음) → 연장</option>
+                <option value="maintain">경계 → 유지</option>
+                <option value="recurrent">재발/지속 → 단축</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>다음 간격 <span class="req">*</span></label>
+              <select name="nextIntervalW" id="interval-select" required>${intervalOptions}</select>
+            </div>
+            <div class="field">
+              <label>다음 예정일</label>
+              <input type="date" name="nextDate" readonly style="background:#f8fafc">
+            </div>
+          </div>
+        `}
+
+        <hr>
+        <div class="form-grid mt-12">
+          <div class="field">
+            <label>합병증·특이사항</label>
+            <select name="complication">
+              <option value="none">없음</option>
+              <option value="subconj_hemo">결막하 출혈</option>
+              <option value="iop_spike">안압 급상승</option>
+              <option value="corneal_abrasion">각막 미란</option>
+              <option value="floaters">부유물</option>
+              <option value="other">기타 (메모에 기재)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>시술자</label>
+            <input type="text" name="surgeon" value="원장"></div>
+          <div class="field full">
+            <label>메모</label>
+            <textarea name="notes" placeholder="특이사항, 환자 반응, 주의점 등"></textarea></div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" onclick="closeModal()">취소</button>
+      <button class="btn ok" onclick="document.getElementById('inj-form').requestSubmit()">주사 기록 저장</button>
+    </div>
+  `);
+
+  // Auto calc next date for T&E
+  const intSel = document.getElementById('interval-select');
+  if(intSel){
+    const updateNextDate = ()=>{
+      const w = parseInt(intSel.value);
+      const date = document.querySelector('[name=date]').value;
+      document.querySelector('[name=nextDate]').value = addDays(date, w*7);
+    };
+    intSel.addEventListener('change', updateNextDate);
+    document.querySelector('[name=date]').addEventListener('change', updateNextDate);
+    updateNextDate();
+  }
+}
+
+function adjustTEInterval(sel, patientId, eye){
+  const p = DB.patients.find(x=>x.id===patientId);
+  const phase = phaseForEye(p, eye);
+  const proto = getProtocol(p.drug, p.diagnosis);
+  const current = phase.intervalW || proto.drug.teMin;
+  const step = proto.drug.teStep;
+  const min = proto.drug.teMin;
+  const max = proto.drug.teMax;
+  
+  let newW = current;
+  if(sel.value==='stable') newW = Math.min(current + step, max);
+  else if(sel.value==='recurrent') newW = Math.max(current - step, min);
+  
+  const intSel = document.getElementById('interval-select');
+  intSel.value = newW;
+  intSel.dispatchEvent(new Event('change'));
+}
+
+function saveInjection(patientId, eye){
+  const form = document.getElementById('inj-form');
+  const d = Object.fromEntries(new FormData(form));
+  const p = DB.patients.find(x=>x.id===patientId);
+  const phase = phaseForEye(p, eye);
+  const proto = getProtocol(p.drug, p.diagnosis);
+
+  const inj = {
+    id: uid(),
+    eye,
+    date: d.date,
+    drug: d.drug,
+    lot: d.lot,
+    iopPre: d.iopPre?parseInt(d.iopPre):null,
+    iopPost: d.iopPost?parseInt(d.iopPost):null,
+    vaPre: d.vaPre,
+    vaPost: d.vaPost,
+    surgeon: d.surgeon,
+    complication: d.complication,
+    notes: d.notes,
+    phase: phase.phase,
+    loadNum: phase.phase==='loading'?phase.next:null,
+    loadTotal: phase.phase==='loading'?phase.total:null,
+    nextIntervalW: phase.phase==='TE'?parseInt(d.nextIntervalW):proto.drug.loadIntervalW,
+    response: d.response
+  };
+
+  p.injections = p.injections || [];
+  p.injections.push(inj);
+  
+  // Update current interval for T&E
+  if(phase.phase==='TE' && d.nextIntervalW){
+    p.currentIntervalW = p.currentIntervalW || {};
+    p.currentIntervalW[eye] = parseInt(d.nextIntervalW);
+  }
+
+  saveDB();
+  syncInjection(inj, patientId);
+  closeModal();
+  renderPatientDetail(p);
+}
+
+/* ==========================================
+   ACTIONS
+========================================== */
+function setPatientStatus(id, status){
+  const p = DB.patients.find(x=>x.id===id);
+  if(!p) return;
+  p.status = status;
+  saveDB();
+  syncPatient(p);
+  renderPatientDetail(p);
+}
+function deleteInjection(patientId, injId){
+  if(!confirm('이 주사 기록을 삭제하시겠습니까?\n삭제 후 다음 주사 예정일이 자동 재계산됩니다.')) return;
+  const p = DB.patients.find(x=>x.id===patientId);
+  p.injections = p.injections.filter(i=>i.id!==injId);
+  saveDB();
+  syncDeleteInjection(injId);
+  renderPatientDetail(p);
+}
+function confirmDelete(id){
+  const p = DB.patients.find(x=>x.id===id);
+  if(!confirm(`${p.name} 환자 정보와 모든 주사 기록을 완전히 삭제합니다.\n계속하시겠습니까?`)) return;
+  const name = p.name;
+  DB.patients = DB.patients.filter(x=>x.id!==id);
+  saveDB();
+  syncDeletePatient(id, name);
+  setView('patients');
+}
+
+/* ==========================================
+   RENDER: SCHEDULE (Calendar View)
+========================================== */
+function renderSchedule(){
+  const root = document.getElementById('view-root');
+  const today = todayStr();
+  const start = new Date(today+'T00:00:00');
+  const days = [];
+  for(let i=0;i<28;i++){
+    const d = new Date(start); d.setDate(d.getDate()+i);
+    days.push(d.toISOString().slice(0,10));
+  }
+  
+  // Collect scheduled injections per day
+  const byDay = {};
+  DB.patients.filter(p=>p.status==='active').forEach(p=>{
+    getEyesForPatient(p).forEach(e=>{
+      const nd = nextScheduledDate(p,e);
+      if(!byDay[nd]) byDay[nd]=[];
+      byDay[nd].push({p,e});
+    });
+  });
+  
+  // Past overdue
+  const overdueByDay = {};
+  DB.patients.filter(p=>p.status==='active').forEach(p=>{
+    getEyesForPatient(p).forEach(e=>{
+      const nd = nextScheduledDate(p,e);
+      if(nd < today){
+        if(!overdueByDay[nd]) overdueByDay[nd]=[];
+        overdueByDay[nd].push({p,e});
+      }
+    });
+  });
+
+  root.innerHTML = `
+    <div class="page-head">
+      <div>
+        <h1>일정 보기</h1>
+        <div class="page-sub">향후 4주간 주사 예정</div>
+      </div>
+    </div>
+
+    ${Object.keys(overdueByDay).length>0?`
+      <div class="card" style="border-color:var(--danger);background:var(--danger-bg);margin-bottom:16px">
+        <h3 style="color:var(--danger)">🚨 지연 환자</h3>
+        ${Object.entries(overdueByDay).sort().map(([d,list])=>`
+          <div style="margin-top:8px">
+            <b>${fmtDateFull(d)}</b> · ${list.length}명
+            <div style="margin-top:4px">
+              ${list.map(({p,e})=>`<span class="badge red" style="margin:2px 4px 2px 0;cursor:pointer" onclick="openPatientDetail('${p.id}')">${p.name} (${e})</span>`).join('')}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `:''}
+
+    <div class="card">
+      <table class="tbl">
+        <thead><tr><th>날짜</th><th>요일</th><th>건수</th><th>예정 환자</th></tr></thead>
+        <tbody>
+          ${days.map(d=>{
+            const list = byDay[d]||[];
+            const dd = new Date(d+'T00:00:00');
+            const dow = ['일','월','화','수','목','금','토'][dd.getDay()];
+            const isToday = d===today;
+            return `<tr class="${isToday?'row-today':''}">
+              <td><b>${fmtDateFull(d)}</b>${isToday?' <span class="badge blue">오늘</span>':''}</td>
+              <td>${dow}</td>
+              <td>${list.length>0?`<b>${list.length}</b>`:'<span class="text-muted">-</span>'}</td>
+              <td>${list.map(({p,e})=>`<span class="badge ${DRUGS[p.drug].color}" style="margin:2px 4px 2px 0;cursor:pointer" onclick="openPatientDetail('${p.id}')">${p.name} ${e}</span>`).join('')}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+/* ==========================================
+   RENDER: PROTOCOLS
+========================================== */
+function renderProtocols(){
+  const root = document.getElementById('view-root');
+  root.innerHTML = `
+    <div class="page-head">
+      <div>
+        <h1>약제별 프로토콜</h1>
+        <div class="page-sub">본 앱에 내장된 스케줄 계산 규칙 · 임상 판단 기준은 집도의 판단 우선</div>
+      </div>
+    </div>
+    <div class="card">
+      <table class="tbl">
+        <thead><tr>
+          <th>약제</th><th>용량</th><th>Loading</th><th>Loading 간격</th>
+          <th>T&E 최소</th><th>T&E 최대</th><th>T&E 조정 단위</th><th>특이사항</th>
+        </tr></thead>
+        <tbody>
+          ${Object.entries(DRUGS).map(([k,v])=>`
+            <tr>
+              <td><b><span class="badge ${v.color}">${v.name}</span></b></td>
+              <td class="tiny">${v.full}</td>
+              <td class="tiny">${Object.entries(v.loadingDefault).map(([dx,n])=>`${DIAGNOSES[dx]||dx}: ${n}회`).join(', ')}</td>
+              <td>${v.loadIntervalW}주</td>
+              <td>${v.teMin}주</td>
+              <td>${v.teMax}주</td>
+              <td>${v.teStep}주</td>
+              <td class="tiny">${v.note}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="card mt-20">
+      <h3>📘 스케줄 로직 설명</h3>
+      <p style="margin-top:8px;line-height:1.8;font-size:13.5px">
+        <b>1. Loading 단계:</b> 등록 후 약제·진단에 따라 3–6회까지는 4주 간격으로 고정 스케줄됩니다.<br>
+        <b>2. T&E 전환:</b> Loading 완료 직후 T&E 최소 간격(약제별 4–8주)부터 시작합니다.<br>
+        <b>3. 매 T&E 방문:</b> "안정/유지/재발" 평가를 입력하면 자동으로 2–4주 단위로 간격이 조정됩니다 (최소/최대 범위 내).<br>
+        <b>4. 수동 조정:</b> 간격은 언제든 드롭다운에서 수동 변경 가능합니다.<br>
+        <b>5. 양안(OU):</b> 좌우안 각각 독립된 loading·T&E 스케줄로 관리됩니다.
+      </p>
+    </div>
+  `;
+}
+
+/* ==========================================
+   RENDER: SETTINGS
+========================================== */
+function renderSettings(){
+  const root = document.getElementById('view-root');
+  const configured = Sync.isConfigured();
+  const syncStatusText = {
+    'init':'초기화 중','online':'✅ 동기화됨','syncing':'🔄 동기화 중',
+    'offline':'🟠 오프라인 (큐 대기 중)','error':'🔴 연결 오류','local-only':'⚫ 로컬 전용 모드'
+  }[Sync.status] || Sync.status;
+  
+  root.innerHTML = `
+    <div class="page-head">
+      <div>
+        <h1>설정 · 백업 · 동기화</h1>
+        <div class="page-sub">구글시트 연동 · 데이터 백업</div>
+      </div>
+    </div>
+
+    <div class="card" style="border:2px solid ${configured?'#059669':'#f59e0b'}">
+      <h3>🔄 구글시트 동기화</h3>
+      ${configured ? `
+        <div class="mt-12" style="background:#ecfdf5;padding:14px;border-radius:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <div>
+              <div style="font-size:15px;font-weight:700">${syncStatusText}</div>
+              <div class="tiny text-muted mt-4">
+                마지막 서버 동기화: ${Sync.lastPull ? new Date(Sync.lastPull).toLocaleString('ko-KR') : '없음'}<br>
+                마지막 업로드: ${Sync.lastPush ? new Date(Sync.lastPush).toLocaleString('ko-KR') : '없음'}<br>
+                대기 중인 변경: <b>${Sync.queue.length}건</b>
+                ${Sync.error ? `<br><span style="color:#dc2626">오류: ${Sync.error}</span>` : ''}
+              </div>
+            </div>
+            <button class="btn ok" onclick="manualSync()">🔄 지금 동기화</button>
+          </div>
+        </div>
+        <div class="mt-12">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px">기록용 사용자 이름 (감사로그에 표시)</label>
+          <input type="text" id="sync-user" value="${Sync.user||''}" placeholder="예: 김간호사 / 원장" 
+            style="padding:8px 12px;border:1px solid var(--line2);border-radius:6px;width:240px;font-family:inherit"
+            onchange="Sync.user=this.value; saveMeta();">
+          <div class="tiny text-muted mt-4">기기별로 기록됩니다 (이 기기 ID: ${Sync.deviceId})</div>
+        </div>
+      ` : `
+        <div class="mt-12" style="background:#fef3c7;padding:14px;border-radius:6px">
+          <div style="font-weight:700;color:#92400e">⚠️ 동기화가 설정되지 않았습니다</div>
+          <div class="tiny mt-4">현재 이 브라우저(localStorage)에만 저장됩니다. 여러 기기에서 사용하려면 Google Apps Script 설정이 필요합니다.</div>
+          <div class="tiny mt-4">HTML 파일 상단의 <code>API_CONFIG.URL</code>과 <code>API_CONFIG.TOKEN</code>을 설정한 뒤 다시 로드하세요. DEPLOYMENT.md 참조.</div>
+        </div>
+      `}
+    </div>
+
+    <div class="card mt-20">
+      <h3>📦 로컬 JSON 백업</h3>
+      <p class="tiny text-muted mt-12">구글시트 동기화와 별도로, 이 브라우저 데이터를 JSON 파일로 다운로드합니다. 재해 대비용.</p>
+      <div class="mt-12 flex">
+        <button class="btn" onclick="exportData()">📥 JSON 다운로드</button>
+        <input type="file" id="import-file" accept=".json" style="display:none">
+        <button class="btn ghost" onclick="document.getElementById('import-file').click()">📤 JSON 파일 선택</button>
+        <button class="btn ghost" onclick="importData()">불러오기 실행</button>
+      </div>
+    </div>
+
+    <div class="card mt-20">
+      <h3>📊 CSV 내보내기</h3>
+      <p class="tiny text-muted mt-12">주사 기록을 엑셀로 볼 수 있는 CSV로 내보냅니다. 구글시트에서도 직접 다운로드 가능.</p>
+      <div class="mt-12 flex">
+        <button class="btn ghost" onclick="exportCSV('patients')">환자 목록 CSV</button>
+        <button class="btn ghost" onclick="exportCSV('injections')">주사 기록 CSV</button>
+      </div>
+    </div>
+
+    <div class="card mt-20" style="border-color:var(--danger)">
+      <h3 style="color:var(--danger)">⚠️ 로컬 데이터 초기화</h3>
+      <p class="tiny text-muted mt-12">이 브라우저의 데이터만 삭제됩니다. 구글시트에 저장된 데이터는 그대로 유지됩니다. 다음 번 로드 시 서버에서 다시 가져옵니다.</p>
+      <div class="mt-12">
+        <button class="btn danger ghost" onclick="resetAll()">로컬 캐시 삭제</button>
+      </div>
+    </div>
+
+    <div class="card mt-20" style="background:#f8fafc">
+      <h3>ℹ️ 시스템 정보</h3>
+      <div class="tiny mt-12">
+        버전: 2.0 (구글시트 연동)<br>
+        동기화 상태: ${syncStatusText}<br>
+        환자: ${DB.patients.length}명<br>
+        주사: ${DB.patients.reduce((s,p)=>s+(p.injections||[]).length,0)}건<br>
+        로컬 데이터 크기: ${(JSON.stringify(DB).length/1024).toFixed(1)} KB<br>
+        큐 대기: ${Sync.queue.length}건
+      </div>
+    </div>
+  `;
+}
+
+function exportData(){
+  const data = JSON.stringify(DB, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `IVI_backup_${todayStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function importData(){
+  const file = document.getElementById('import-file').files[0];
+  if(!file){alert('파일을 선택해 주세요'); return}
+  if(!confirm('현재 데이터가 모두 대체됩니다. 계속하시겠습니까?')) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const d = JSON.parse(e.target.result);
+      Object.assign(DB, d);
+      saveDB();
+      alert('불러오기 완료');
+      render();
+    }catch(err){alert('파일 형식 오류: '+err.message)}
+  };
+  reader.readAsText(file);
+}
+function exportCSV(type){
+  let rows = [];
+  if(type==='patients'){
+    rows.push(['차트번호','이름','생년월일','눈','진단','약제','상태','DM','HTN','알레르기','등록일','총주사수']);
+    DB.patients.forEach(p=>{
+      rows.push([p.chartNo||'', p.name, p.birth||'', p.eye, diagnosisName(p.diagnosis), DRUGS[p.drug].name,
+        STATUS[p.status].label, p.dm?'Y':'N', p.htn?'Y':'N', p.allergy||'', p.startDate||'', (p.injections||[]).length]);
+    });
+  }else{
+    rows.push(['환자명','차트번호','주사일','눈','약제','Lot','IOP전','IOP후','VA전','VA후','단계','합병증','메모']);
+    DB.patients.forEach(p=>{
+      (p.injections||[]).forEach(i=>{
+        rows.push([p.name, p.chartNo||'', i.date, i.eye, DRUGS[i.drug||p.drug]?.name||i.drug,
+          i.lot||'', i.iopPre||'', i.iopPost||'', i.vaPre||'', i.vaPost||'',
+          i.phase==='loading'?`Loading ${i.loadNum}/${i.loadTotal}`:`T&E ${i.nextIntervalW}w`,
+          i.complication||'none', (i.notes||'').replace(/[\n,]/g,' ')]);
+      });
+    });
+  }
+  const csv = '\ufeff' + rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `IVI_${type}_${todayStr()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function resetAll(){
+  const cfg = Sync.isConfigured();
+  const msg = cfg 
+    ? '이 브라우저의 로컬 캐시를 삭제합니다.\n(구글시트 서버 데이터는 안전하게 유지됩니다.)\n\n계속하시겠습니까?'
+    : '정말로 모든 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.';
+  if(!confirm(msg)) return;
+  if(!cfg && !confirm('한 번 더 확인합니다. 이 작업은 되돌릴 수 없습니다.')) return;
+  
+  DB.patients = [];
+  Sync.queue = [];
+  Sync.lastPull = null;
+  Sync.lastPush = null;
+  saveDB();
+  saveQueue();
+  saveMeta();
+  
+  if(cfg){
+    alert('로컬 캐시 삭제 완료. 다음 로드 시 서버에서 다시 가져옵니다.');
+    // 서버에서 다시 가져오기
+    pullFromServer().then(()=>render());
+  } else {
+    alert('초기화되었습니다');
+    setView('dashboard');
+  }
+}
+
+/* ==========================================
+   MANUAL (의료진 프로토콜) VIEW
+========================================== */
+function renderManual(){
+  const root = document.getElementById('view-root');
+  root.innerHTML = `
+    <div class="manual-view">
+      <div class="no-print" style="max-width:900px;margin:0 auto 12px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="btn" onclick="window.print()">🖨 인쇄</button>
+      </div>
+      <div style="max-width:900px;margin:0 auto">
+
+      <div class="m-head">
+        <div>
+          <div class="m-eyebrow">Standard Operating Procedure · Intravitreal Injection</div>
+          <div class="m-title">유리체강내 주사 종합 프로토콜</div>
+          <div class="m-sub">서울안과 · 의료진용 매뉴얼 · v1.0 (초판 · 2026)</div>
+          <div class="m-sub" style="margin-top:4px">적용: 간호사 준비 / 집도의 시술 / 주의사항 / 합병증 대응 / 응급 관리</div>
+        </div>
+      </div>
+
+      <div class="m-toc">
+        <b>목차</b>
+        <ol>
+          <li><a onclick="document.getElementById('m-s1').scrollIntoView({behavior:'smooth'})">시술 개요와 적응증</a></li>
+          <li><a onclick="document.getElementById('m-s2').scrollIntoView({behavior:'smooth'})">약제별 특성과 프로토콜</a></li>
+          <li><a onclick="document.getElementById('m-s3').scrollIntoView({behavior:'smooth'})">치료 전략 (Loading, PRN, T&amp;E)</a></li>
+          <li><a onclick="document.getElementById('m-s4').scrollIntoView({behavior:'smooth'})">시술실 환경과 장비</a></li>
+          <li><a onclick="document.getElementById('m-s5').scrollIntoView({behavior:'smooth'})">환자 스크리닝 (접수/외래)</a></li>
+          <li><a onclick="document.getElementById('m-s6').scrollIntoView({behavior:'smooth'})">간호사 준비 단계</a></li>
+          <li><a onclick="document.getElementById('m-s7').scrollIntoView({behavior:'smooth'})">집도의 시술 단계</a></li>
+          <li><a onclick="document.getElementById('m-s8').scrollIntoView({behavior:'smooth'})">시술 후 처치와 간호</a></li>
+          <li><a onclick="document.getElementById('m-s9').scrollIntoView({behavior:'smooth'})">합병증과 대응</a></li>
+          <li><a onclick="document.getElementById('m-s10').scrollIntoView({behavior:'smooth'})">안내염 응급 대응</a></li>
+          <li><a onclick="document.getElementById('m-s11').scrollIntoView({behavior:'smooth'})">감염 관리·소독·폐기물</a></li>
+          <li><a onclick="document.getElementById('m-s12').scrollIntoView({behavior:'smooth'})">기록·보험·청구 체크</a></li>
+          <li><a onclick="document.getElementById('m-s13').scrollIntoView({behavior:'smooth'})">체크리스트 모음</a></li>
+        </ol>
+      </div>
+
+      <h2 id="m-s1"><span class="num">01.</span>시술 개요와 적응증</h2>
+      <p>유리체강내 주사(intravitreal injection, IVI)는 현재 망막질환 치료의 표준 술식입니다. 주로 항혈관내피성장인자(anti‑VEGF) 제제를 공막을 통해 유리체강 내에 직접 투여합니다. 시술 자체는 5분 이내에 끝나지만, <b>안내염 발생 시 실명 위험이 있는 고위험 시술</b>이므로 무균술·프로토콜·응급 대응 체계가 반드시 선행되어야 합니다.</p>
+
+      <h3>주요 적응증</h3>
+      <table>
+        <tr><th style="width:28%">질환</th><th>대표 약제</th><th>특이사항</th></tr>
+        <tr><td>신생혈관성 AMD (wAMD)</td><td>Eylea, Eylea HD, Vabysmo, Lucentis, Beovu</td><td>Loading 3회 후 T&amp;E 또는 고정 간격</td></tr>
+        <tr><td>당뇨황반부종 (DME)</td><td>Eylea, Eylea HD, Vabysmo, Lucentis, Ozurdex</td><td>DME 초기 HbA1c·혈압 조절 병행</td></tr>
+        <tr><td>망막정맥폐쇄 황반부종 (BRVO/CRVO‑ME)</td><td>Eylea, Lucentis, Vabysmo, Ozurdex</td><td>백내장·녹내장 환자 → Ozurdex 신중</td></tr>
+        <tr><td>근시성 맥락막신생혈관 (mCNV)</td><td>Lucentis, Eylea</td><td>PRN 위주, 젊은 환자 장기 관리</td></tr>
+        <tr><td>비감염성 후방포도막염</td><td>Ozurdex</td><td>안압 상승 주의</td></tr>
+        <tr><td>미숙아망막병증 (ROP)</td><td>Lucentis, Eylea (off‑label)</td><td>본원 범위 외 — 전원 기준 명확화</td></tr>
+      </table>
+
+      <div class="m-callout info"><b>Clinical Pearl</b>
+      산정특례/급여 적용 여부는 질환별로 다릅니다. AMD·DME·RVO 황반부종은 급여 적용되지만, 시력·FAG/OCT 소견 기준을 충족해야 하므로 <b>초기부터 영상·시력 근거를 확보</b>해 둬야 삭감이 없습니다.</div>
+
+      <h3>금기·상대적 금기</h3>
+      <ul>
+        <li><b>절대:</b> 해당 눈의 활동성 안구·안구주위 감염(결막염·안검염·누낭염), 전신 활동성 감염</li>
+        <li><b>상대적:</b> 최근 안내 수술 직후(2주 이내), 조절 안 된 녹내장, 최근(3개월) 뇌경색·심근경색·MACE 병력(anti‑VEGF 전신 흡수 위험 논의)</li>
+        <li><b>주의:</b> 임신·수유(환자와 위험‑이익 상의), 한눈 환자는 반드시 가족 동의와 합의</li>
+      </ul>
+
+      <h2 id="m-s2"><span class="num">02.</span>약제별 특성과 프로토콜</h2>
+      <table>
+        <tr><th>약제</th><th>용량/용적</th><th>기전</th><th>Loading</th><th>유지</th><th>특이사항</th></tr>
+        <tr><td><b>Lucentis</b><br>(Ranibizumab)</td><td>0.5 mg / 0.05 mL</td><td>anti‑VEGF‑A Fab</td><td>AMD: 월 1회 × 3회</td><td>월 1회 PRN 또는 T&amp;E</td><td>분자량 작아 전신 노출 적음</td></tr>
+        <tr><td><b>Eylea 2 mg</b><br>(Aflibercept)</td><td>2 mg / 0.05 mL</td><td>VEGF trap (VEGF‑A, PlGF)</td><td>AMD: 월 1회 × 3회<br>DME: 월 1회 × 5회</td><td>q8주 고정 또는 T&amp;E (4–16주)</td><td>가장 많이 사용, 근거 풍부</td></tr>
+        <tr><td><b>Eylea HD 8 mg</b></td><td>8 mg / 0.07 mL</td><td>고용량 aflibercept</td><td>월 1회 × 3회</td><td>q12–16주</td><td>주사 횟수 감소 — 부담 큰 환자에 유리</td></tr>
+        <tr><td><b>Vabysmo</b><br>(Faricimab)</td><td>6 mg / 0.05 mL</td><td>이중특이항체 (VEGF‑A + Ang‑2)</td><td>AMD: 월 1회 × 4회<br>DME: 월 1회 × 4–6회<br>RVO: 월 1회 × 6회</td><td>T&amp;E 최대 q16주</td><td>Ang‑2 병용 기전 — 장기 간격에 유리</td></tr>
+        <tr><td><b>Beovu</b><br>(Brolucizumab)</td><td>6 mg / 0.05 mL</td><td>anti‑VEGF scFv</td><td>월 1회 × 3회</td><td>q8–12주</td><td>IOI/폐쇄성망막혈관염 위험 — 초기 환자 선택 신중, 증상 시 즉시 중단</td></tr>
+        <tr><td><b>Ozurdex</b><br>(Dexa 0.7 mg)</td><td>임플란트 주입기</td><td>스테로이드 서방형</td><td>단회 주입</td><td>3–6개월마다 반복</td><td>IOP 상승(1/3), 백내장 진행 — 위상체안 주의</td></tr>
+        <tr><td><b>IVTA</b><br>(Triamcinolone)</td><td>2–4 mg</td><td>결정성 스테로이드</td><td>단회 주입</td><td>필요시 3–6개월 간격</td><td>IOP 상승·백내장 — 사용 감소 추세</td></tr>
+      </table>
+
+      <div class="m-callout warn"><b>Beovu 주의</b>
+      Beovu는 효과는 우수하지만 안내 염증(IOI)과 <b>폐쇄성 망막혈관염</b>이 타 약제 대비 높게 보고됩니다. 도입 초기에는 wAMD 환자 중 타 약제 불응례로 제한 적용하고, <b>매 방문 시 IOI 증상(시야 감소·부유물·통증) 반드시 확인</b>하시기를 권합니다.</div>
+
+      <h3>보관·실온화</h3>
+      <ul>
+        <li>Eylea/Eylea HD/Lucentis/Vabysmo/Beovu: 냉장 2–8℃ 보관. 빛 차단.</li>
+        <li>시술 직전 실온에 20–30분 방치하여 균등화 (냉장고에서 꺼내자마자 사용 금지 — 기포·주입 저항↑).</li>
+        <li>프리필드 시린지는 흔들지 말고, 개봉 후 지체 없이 사용.</li>
+        <li>바이알 제제(Eylea 일부 용량, 트리암시놀론)는 필터 바늘 사용 필수.</li>
+      </ul>
+
+      <h2 id="m-s3"><span class="num">03.</span>치료 전략 — Loading · PRN · T&amp;E</h2>
+      <div class="m-grid2">
+        <div><h4>Loading (초기 집중치료)</h4><p>질환 통제를 위한 반복 주사. 약제별로 3–6회. 이 기간에는 <b>간격 연장 금지</b>. Loading 미완료 시 장기 예후가 나빠집니다.</p></div>
+        <div><h4>PRN (as needed)</h4><p>매달 평가하되 활동성 징후(누출·출혈·시력저하)가 있을 때만 주사. 환자 내원 부담 크고, 재발 놓칠 위험.</p></div>
+        <div><h4>T&amp;E (Treat &amp; Extend) ★권장</h4><p>매 방문마다 주사 + 다음 간격 조절. 안정 시 2주 연장, 재발 시 2주 단축. 내원↓·과소치료↓ 균형. 최대 16주(Eylea 2mg은 8–12주 권장).</p></div>
+        <div><h4>고정 간격 (Fixed)</h4><p>Loading 후 q8w / q12w / q16w 등 고정. 환자 예측 쉽고 스케줄 관리 간편. 단, 일부 환자 과·과소치료 가능.</p></div>
+      </div>
+
+      <div class="m-callout ok"><b>도입 초기 권장 전략</b>
+      도입 초반에는 <b>Eylea 2mg 또는 Vabysmo 기반 T&amp;E</b>로 표준화하시고, 드물게 Ozurdex(RVO·DME 특정 환자)를 병용하는 구조가 관리 부담·치료 효과 모두 균형적입니다. Beovu·Eylea HD는 운영 안정 이후 단계적 도입을 권합니다.</div>
+
+      <h3>T&amp;E 운영 규칙 (예시)</h3>
+      <ol>
+        <li>Loading 완료 (AMD 3회, DME/RVO 5–6회)</li>
+        <li>첫 T&amp;E 평가: 활동성 없으면 8주 후 다음 주사</li>
+        <li>방문마다 주사 후 OCT·시력 평가. 안정이면 +2주, 활동성이면 −2주 (또는 현 간격 유지)</li>
+        <li>최소 4주, 최대 16주 (Eylea 2mg은 12주 상한 권장)</li>
+        <li>연속 3회 16주 안정 시 "유예(pause)" 후 월 1회 모니터링 고려</li>
+      </ol>
+
+      <h2 id="m-s4"><span class="num">04.</span>시술실 환경과 장비</h2>
+      <h3>공간 요건</h3>
+      <ul>
+        <li>독립된 처치실(clean room 수준). 외래 통행 동선과 분리.</li>
+        <li>HEPA 필터 또는 최소한 공기청정기 상시 가동, 시술 중 문 닫힘 유지.</li>
+        <li>바닥·벽은 매일 소독. 세균/곰팡이 지표 주기적 측정.</li>
+        <li>응급 카트 비치: 에피네프린, 항히스타민, 스테로이드, 산소, BP 모니터, AED.</li>
+      </ul>
+
+      <h3>장비 목록</h3>
+      <table>
+        <tr><th style="width:30%">품목</th><th>세부</th></tr>
+        <tr><td>Slit lamp (처치실 또는 인접)</td><td>시술 전후 평가용</td></tr>
+        <tr><td>수평 리클라이닝 의자 또는 시술용 침상</td><td>리클라이닝 각도 충분히 확보</td></tr>
+        <tr><td>수술 조명</td><td>LED 조명, 그림자 최소</td></tr>
+        <tr><td>무균 시술 트레이</td><td>개별 포장 kit 또는 원내 멸균</td></tr>
+        <tr><td>Lid speculum (소·중)</td><td>무균 disposable 권장</td></tr>
+        <tr><td>캘리퍼 (3.5 mm / 4.0 mm)</td><td>윤부 거리 측정</td></tr>
+        <tr><td>30G × 1/2″ (13 mm) 주사바늘</td><td>Eylea/Lucentis/Vabysmo 표준. Ozurdex는 전용 주입기.</td></tr>
+        <tr><td>Filter needle (5 μm) 18–19G</td><td>바이알 제제용 (Triamcinolone 등)</td></tr>
+        <tr><td>1 mL 투베르쿨린 주사기</td><td>Luer‑lock 권장</td></tr>
+        <tr><td>5% Povidone‑iodine 안약</td><td>결막 소독 표준. 점안병 단회 사용 권장</td></tr>
+        <tr><td>10% Povidone‑iodine</td><td>안검·피부 소독</td></tr>
+        <tr><td>Topical anesthetic</td><td>Proparacaine 0.5% 또는 Tetracaine / Lidocaine 2% gel</td></tr>
+        <tr><td>무균 면봉(Q‑tip), 거즈, 드레이프</td><td>일회용 포장</td></tr>
+        <tr><td>점안 항생제</td><td>Moxifloxacin / Levofloxacin (술 후 예방적 사용은 선택적)</td></tr>
+        <tr><td>Tonometer (iCare 또는 Goldmann)</td><td>시술 후 안압·광각지각 확인</td></tr>
+        <tr><td>BSS 또는 생리식염수</td><td>세안·응급용</td></tr>
+        <tr><td>폐기물 분류함</td><td>의료폐기물·주사바늘(sharps) 분리</td></tr>
+      </table>
+
+      <div class="m-callout info"><b>Tip</b>
+      "주사 Kit"를 미리 제작해 두세요. 예: 멸균 포장 한 세트에 — 5% PVI 20 mL 드로퍼, 30G 바늘 2개(예비 포함), 1 mL 시린지 2개, 캘리퍼, 스페큘럼, 면봉 5개, 거즈 2장, 드레이프 1장. <b>시술 시간과 오류를 크게 줄입니다.</b></div>
+
+      <h2 id="m-s5"><span class="num">05.</span>환자 스크리닝 (접수·외래)</h2>
+      <h3>외래 평가 — 의사</h3>
+      <ol>
+        <li>적응증 확인 (OCT, FAG 또는 OCTA 근거). 가능하면 <b>영상 캡처·날짜 기록</b> 필수.</li>
+        <li>시력(BCVA), 안압, 전안부·후안부 검사.</li>
+        <li>당뇨·고혈압·항응고제·뇌심혈관 병력, 알레르기(특히 요오드·플루오로퀴놀론) 확인.</li>
+        <li>치료 전략 결정 — 약제, 프로토콜, 시작일.</li>
+        <li>동의서 설명 및 서명 (초회 시술 전 필수).</li>
+        <li>EMR에 치료계획(약제/loading 횟수/T&amp;E 시작 기준) 명시.</li>
+      </ol>
+
+      <h3>접수 단계</h3>
+      <ul>
+        <li>시술 당일 감염(감기·발열·결막염) 유무 확인. 발열/결막염 있으면 연기.</li>
+        <li>동반자(보호자) 동행 필수 안내 — 시술 후 흐릿함으로 독립 귀가 어려울 수 있음.</li>
+        <li>주사 예정 약제·눈(R/L) 이중확인.</li>
+        <li>식사·금식 불필요(경구 약 평소대로). 항응고제는 중단하지 않음.</li>
+      </ul>
+
+      <div class="m-callout warn"><b>Time‑Out 규칙</b>
+      주사실 입실 직후 <b>Time‑Out</b>을 반드시 시행합니다. 환자 본인확인(이름·생년월일), 시술 눈(R/L), 약제명·용량, 알레르기. 간호사가 소리내어 읽고 의사가 confirm. 이 한 단계로 <b>잘못된 눈·잘못된 약제 사고 대부분을 예방</b>할 수 있습니다.</div>
+
+      <h2 id="m-s6"><span class="num">06.</span>간호사 준비 단계 — Step by Step</h2>
+      <div class="m-step"><div class="n">1</div><div class="c"><b>환자 식별 및 동의서 확인</b>차트·팔찌 또는 호명으로 환자 이름·생년월일 더블체크. 주사 동의서 서명 확인. 오늘 주사 <b>약제·눈(R/L)</b>을 환자에게 직접 말로 확인.</div></div>
+      <div class="m-step"><div class="n">2</div><div class="c"><b>활력징후 및 당일 평가</b>혈압·맥박 측정 (고혈압·부정맥 확인). 당뇨 환자 혈당 참고. 오늘 눈 증상 변화(갑작스런 시력저하, 눈 통증, 결막충혈) 질문. 이상 시 의사 즉시 보고.</div></div>
+      <div class="m-step"><div class="n">3</div><div class="c"><b>산동</b>Tropicamide 0.5% 또는 Mydrin‑P 점안 (총 2–3회, 5분 간격). 산동은 시술 자체에 필수는 아니나, <b>시술 후 안저 검사 위해 권장</b>. 환자 상태에 따라 생략 가능(의사 지시).</div></div>
+      <div class="m-step"><div class="n">4</div><div class="c"><b>국소 마취 — 1차</b>산동과 동시에 Proparacaine 0.5% 점안 1회. 환자에게 "따끔할 수 있다"고 안내.</div></div>
+      <div class="m-step"><div class="n">5</div><div class="c"><b>약제 준비</b>주사 바로 직전(시술실 입실 후) 약제를 냉장고에서 꺼내 실온화 상태 확인. 프리필드 시린지는 포장 상태 이상 유무, 유효기간, 제품 외관 확인. <b>바이알 제제는 필터 바늘로 흡인</b> 후 주사바늘 교체. 용량을 정확히 맞춰 남은 공기 제거.</div></div>
+      <div class="m-step"><div class="n">6</div><div class="c"><b>시술실 환경 준비</b>시술대 소독. 조명 점검. 무균 시술 트레이 전개. 의사·간호사 마스크·캡 착용. 의사 손소독. 무균 장갑 준비.</div></div>
+      <div class="m-step"><div class="n">7</div><div class="c"><b>환자 포지셔닝</b>리클라이닝 의자 또는 침상에 앙와위. 머리 위치 고정. 반대 눈 감아도 됨을 안내. 환자에게 "주사하는 눈은 크게 뜨고, 위쪽(또는 지정 방향)을 보게 안내할 것"이라고 설명.</div></div>
+      <div class="m-step"><div class="n">8</div><div class="c"><b>소독 — 표준 프로토콜</b>
+        <ol style="margin:6px 0 0">
+          <li>안검·안검 주위 피부에 <b>10% Povidone‑iodine</b>으로 동심원 소독. 속눈썹·눈썹 포함. 2회.</li>
+          <li>결막낭에 <b>5% Povidone‑iodine</b> 2–3방울 점안. 눈 깜박임 유도, 최소 <b>30–90초 유지</b>.</li>
+          <li>무균 드레이프로 속눈썹 감싸고 스페큘럼 삽입.</li>
+          <li>주사 직전 5% PVI 한 번 더 결막에 추가(선택적, 강력 권장).</li>
+        </ol>
+        <span class="m-small">PVI 알레르기 시 Chlorhexidine 0.05% 또는 Povacrylex — 그러나 대안 증거는 약함.</span>
+      </div></div>
+      <div class="m-step"><div class="n">9</div><div class="c"><b>2차 마취 (선택)</b>환자 통증 민감 시 Lidocaine 2% gel 2–3방울 결막낭에 추가, 또는 주사 부위에 lidocaine 2% 침윤 소량(고령자 권장). <b>PVI 소독 전 또는 후 프로토콜 고정</b>(원내 합의).</div></div>
+      <div class="m-step"><div class="n">10</div><div class="c"><b>의사에게 인계 및 보조</b>스페큘럼 설치 확인 후 의사에게 "소독 완료, 좌안 Eylea 2mg 준비" 등 <b>소리내어 인계</b>. 주사 중 환자 손 잡아주기, 부드러운 음성 안내로 불안 완화. 주사 후 즉시 면봉 건네고 폐기물 분리.</div></div>
+
+      <div class="m-callout info"><b>간호사 핵심 포인트</b>
+      <b>① PVI 접촉 시간 확보</b>(최소 30초 이상) ② <b>무균장갑 착용 후 소독</b> 순서 지키기 ③ <b>Time‑Out 주도</b>는 간호사 역할. 의사가 시술에 집중하는 동안 안전망은 간호사가 만듭니다.</div>
+
+      <h2 id="m-s7"><span class="num">07.</span>집도의 시술 단계</h2>
+      <div class="m-step"><div class="n">1</div><div class="c"><b>최종 확인 (Time‑Out 재확인)</b>환자 이름·눈·약제·용량·만료일. 프리필드 시린지 공기 제거 완료 확인. 바늘 끝 손상 없음 확인.</div></div>
+      <div class="m-step"><div class="n">2</div><div class="c"><b>손소독 · 무균장갑</b>외과적 손소독 (알콜 기반 rub 또는 스크럽). 무균장갑 착용. 마스크·캡 필수.</div></div>
+      <div class="m-step"><div class="n">3</div><div class="c"><b>주사 부위 선택</b>
+        <ul>
+          <li><b>유수정체안(phakic):</b> 각막윤부에서 <b>4.0 mm</b> 후방 (수정체 손상 방지)</li>
+          <li><b>위상체안/무수정체안(pseudo/aphakic):</b> <b>3.5 mm</b> 후방</li>
+          <li>부위: 하이측(inferotemporal) 또는 상이측(superotemporal). 보통 우안은 하이측, 좌안도 하이측이 편함. 환자가 시선을 반대 방향으로 돌리게 하면 노출이 편함.</li>
+          <li>캘리퍼로 윤부에서 측정 후 면봉 끝 또는 캘리퍼 자국으로 표시.</li>
+        </ul>
+      </div></div>
+      <div class="m-step"><div class="n">4</div><div class="c"><b>주사 전 환자 안내</b>"지금부터 주사합니다. 눈은 위(또는 코) 쪽을 보세요. 따끔할 수 있지만 움직이지 말고 숨 편하게 쉬세요."</div></div>
+      <div class="m-step"><div class="n">5</div><div class="c"><b>삽입</b>면봉으로 결막을 살짝 옆으로 이동(결막·공막 경로를 어긋나게 → 창 자가 봉쇄). 30G 바늘을 <b>공막에 수직</b>으로 삽입, 방향은 <b>시신경(안구 중심)</b>을 향해. 바늘 전체 길이(약 13 mm) 중 적절 깊이만 삽입.</div></div>
+      <div class="m-step"><div class="n">6</div><div class="c"><b>주입</b>천천히 주입 (2–5초). 환자가 갑자기 움직이거나 통증을 호소하면 정지 후 위치 재확인. 주입 후 바늘을 <b>삽입 방향 그대로 빠르게 발출</b>, 동시에 면봉으로 <b>10–20초 압박</b> (역류 방지).</div></div>
+      <div class="m-step"><div class="n">7</div><div class="c"><b>시력·광각 확인</b>스페큘럼 제거. 반대 눈을 가리고 <b>"손가락 몇 개로 보이세요?" 또는 "빛 보이세요?"</b> 질문. 완전한 시각 상실 시 CRAO 의심 — 즉시 안저 확인·전원 준비.</div></div>
+      <div class="m-step"><div class="n">8</div><div class="c"><b>안저 확인 (간이)</b>간접검안경 또는 슬릿램프 +90D로 시신경·중심와 관찰. 시신경 관류(관류 양호/불량), 망막 중심 동맥 맥동, 망막박리 여부 확인.</div></div>
+      <div class="m-step"><div class="n">9</div><div class="c"><b>IOP 측정 (필요 시)</b>일상적 필수는 아니나 <b>한눈·녹내장·주입 부피 큰 경우</b> iCare로 즉시 측정. 25 mmHg 이상이면 10–15분 후 재측정, 30 mmHg 초과 지속 시 전방천자 또는 하강 안약 고려.</div></div>
+      <div class="m-step"><div class="n">10</div><div class="c"><b>점안 및 종료</b>Moxifloxacin/Levofloxacin 1방울 점안(선택적). 결막 세척(생리식염수)로 PVI 자극 완화. 환자 일으켜 앉히고 상태 확인.</div></div>
+
+      <div class="m-callout warn"><b>주의 포인트 — 시술 중</b>
+      <ul style="margin:4px 0 0">
+        <li><b>바늘 재사용 금지.</b> 구부러지거나 접촉 오염 시 즉시 교체.</li>
+        <li><b>속눈썹·안검 접촉 금지.</b> 스페큘럼과 드레이프로 철저 차단.</li>
+        <li>주입 중 환자가 "갑자기 안 보인다"고 하면 CRAO 또는 심한 IOP 상승 — 즉시 안저 확인.</li>
+        <li>결막하 출혈은 흔함(문제 없음, 환자 사전 안내).</li>
+      </ul></div>
+
+      <h2 id="m-s8"><span class="num">08.</span>시술 후 처치와 간호</h2>
+      <h3>시술실 내</h3>
+      <ul>
+        <li>환자 호흡·자세 안정화. 어지러움 시 누운 상태에서 5분 휴식.</li>
+        <li>시야·광각 정상 확인 후 보호 안대 또는 투명 실드. 일반적으로 안대는 짧게 — 귀가 시까지.</li>
+        <li>시술 직후 간호사가 환자에게 <b>주의사항 유인물</b> 교부 및 구두 재설명.</li>
+      </ul>
+
+      <h3>귀가 후 환자 지침 (요약 — 상세는 안내문 참조)</h3>
+      <ul>
+        <li>당일 세안·샤워는 가능하되, 주사한 눈 문지르지 않기.</li>
+        <li>24시간은 수영·사우나·안구 문지름 금지.</li>
+        <li>당일 격한 운동·음주 제한.</li>
+        <li>점안 항생제: 필요 시 처방 (4회/일 × 3–5일) — 원내 프로토콜 고정.</li>
+        <li>결막하 출혈(빨간 반점)은 1–2주 내 소실, 걱정 없음.</li>
+        <li><b>즉시 병원 전화/내원해야 할 증상:</b> 통증 악화, 시력 급격 저하, 눈 앞 검은 구름·섬광, 심한 충혈·분비물, 발열.</li>
+      </ul>
+
+      <h3>다음 방문 스케줄</h3>
+      <ul>
+        <li>Loading 중: 정확히 4주(28일) 후 재주사. 스케줄러에 자동 등록.</li>
+        <li>T&amp;E: 평가·주사 동시. 다음 간격은 당일 OCT·시력 기준으로 결정.</li>
+        <li>시술 후 이상 증상 자가 모니터링 기간 48–72시간. 첫 48시간 이내 전화 f/u 시스템 권장.</li>
+      </ul>
+
+      <h2 id="m-s9"><span class="num">09.</span>합병증과 대응</h2>
+      <table>
+        <tr><th>합병증</th><th>빈도</th><th>소견</th><th>대응</th></tr>
+        <tr><td>결막하 출혈</td><td>흔함</td><td>빨간 반점, 통증 없음</td><td>안심 설명, 1–2주 내 소실</td></tr>
+        <tr><td>일시적 부유물/섬광</td><td>흔함</td><td>주입 기포, 미세 출혈</td><td>경과 관찰. 심하면 안저검사</td></tr>
+        <tr><td>안압 상승(일시)</td><td>흔함</td><td>주입 직후 IOP 30–50</td><td>10–15분 후 재측정, 지속 시 전방천자·하강제</td></tr>
+        <tr><td>각막 미란</td><td>간헐적</td><td>PVI·마취제 자극, 이물감</td><td>인공눈물, 필요 시 항생제 연고, 하루 호전</td></tr>
+        <tr><td>수정체 손상</td><td>드묾</td><td>바늘 위치 오류, 외상성 백내장</td><td>수술 전원 또는 내원원 수술 계획</td></tr>
+        <tr><td>유리체 출혈</td><td>드묾</td><td>시력 급저하, 부유물 다수</td><td>안정, 경과관찰, 지속 시 수술</td></tr>
+        <tr><td>망막박리</td><td>0.01–0.1%</td><td>섬광·커튼·시야 결손</td><td>즉시 안저검사 → 수술 전원</td></tr>
+        <tr><td>안내염</td><td>0.02–0.05%</td><td>통증·충혈·전방축농·시력저하 (보통 3–7일)</td><td><b>응급 — 아래 섹션 참조</b></td></tr>
+        <tr><td>IOI/망막혈관염 (Beovu 등)</td><td>Beovu 1–5%</td><td>부유물, 시야 결손, FAG 혈관염</td><td>즉시 중단, 스테로이드 치료, 전원</td></tr>
+        <tr><td>알레르기·쇼크</td><td>드묾</td><td>두드러기·기도증상·저혈압</td><td>에피네프린·항히스타민·산소·119</td></tr>
+        <tr><td>TAC (vascular, 전신)</td><td>매우 드묾</td><td>뇌경색·심근경색</td><td>anti‑VEGF 전신 위험 — 기왕력 환자 상의</td></tr>
+      </table>
+
+      <h2 id="m-s10"><span class="num">10.</span>안내염 응급 대응</h2>
+      <p><b>안내염은 IVI의 가장 심각한 합병증</b>입니다. 발생 시 수시간 내 처치로 시력 보존 가능성이 달라집니다.</p>
+      <h3>의심 증상 (환자가 호소)</h3>
+      <ul>
+        <li>주사 후 2–7일 이내 <b>통증 악화</b>, 충혈 증가, 시력 감소, 심한 부유물, 분비물.</li>
+        <li>"주사 후 잠깐 좋아졌다가 다시 나빠짐" — 고위험 신호.</li>
+      </ul>
+      <h3>즉시 체크</h3>
+      <ol>
+        <li>BCVA 측정 (광각·수지동·HM 까지)</li>
+        <li>세극등: 각막 혼탁, 전방 세포·축농(hypopyon), 홍채 후유착, 유리체 혼탁</li>
+        <li>가능하면 B‑scan: 유리체 혼탁·망막박리 확인</li>
+        <li>즉시 유리체 절제술·유리체강내 항생제 투여 가능한 망막 전문 기관 전원 결정</li>
+      </ol>
+      <h3>표준 대응 (전원 전)</h3>
+      <ul>
+        <li>유리체 천자(안방수·유리체액 배양) + 유리체강내 항생제 투여
+          <ul>
+            <li>Vancomycin 1 mg / 0.1 mL</li>
+            <li>Ceftazidime 2.25 mg / 0.1 mL (penicillin allergy 시 Amikacin 0.4 mg / 0.1 mL)</li>
+          </ul>
+        </li>
+        <li>국소 fortified 항생제 (Vancomycin 50 mg/mL, Ceftazidime 50 mg/mL) 30분 간격</li>
+        <li>전신 치료는 진균 의심·중증에서</li>
+        <li>반드시 <b>전원 협의 병원 사전 확보</b> (지역 대학병원 망막파트) — 도입 전 공식 협력체계 구축 권장</li>
+      </ul>
+
+      <div class="m-callout warn"><b>실무 권고</b>
+      본원 도입 초기에는 유리체강내 항생제·천자 시술을 본원에서 수행하지 않더라도, <b>안내염 의심 → 30분 이내 전원 협약 병원 출발</b>의 프로토콜을 명문화하시는 것이 현실적입니다. 환자에게 "주사 후 2–7일 중 눈이 더 아프거나 갑자기 안 보이면 <u>즉시 병원 전화</u>"라고 반복 강조하세요.</div>
+
+      <h2 id="m-s11"><span class="num">11.</span>감염 관리·소독·폐기물</h2>
+      <h3>시술 당일 환경</h3>
+      <ul>
+        <li>시술 환자당 드레이프·스페큘럼·시린지·바늘 <b>모두 1회용</b>. 재사용 절대 금지.</li>
+        <li>PVI 드로퍼는 환자 1인 1병 원칙(또는 당일 개봉·폐기).</li>
+        <li>바닥·처치대 소독: 환자 간 알콜 와이프, 당일 종료 후 희석 차아염소산나트륨.</li>
+        <li>마스크·캡: 시술자·간호사 모두 착용. 대화는 최소화(비말 → 안내염 주요 원인).</li>
+      </ul>
+      <h3>멸균·소독 검증</h3>
+      <ul>
+        <li>kit 포장 멸균 유효기간 확인 기록.</li>
+        <li>공기·접촉 배양검사 분기별 시행(최소 반기별).</li>
+        <li>안내염 발생 시 시술 기록·시약 lot·시간대 즉시 추적.</li>
+      </ul>
+      <h3>폐기물</h3>
+      <ul>
+        <li>주사바늘·시린지: sharps 전용함. 넘치기 전 교체.</li>
+        <li>감염성 폐기물: 전용 용기 라벨링 후 지정 업체 수거.</li>
+        <li>약제 바이알/시린지: 폐의약품 분리 배출.</li>
+      </ul>
+
+      <h2 id="m-s12"><span class="num">12.</span>기록·보험·청구 체크</h2>
+      <h3>EMR 필수 기록</h3>
+      <ul>
+        <li>환자·눈·진단·약제·용량·로트·만료일</li>
+        <li>시술 시각, 소독 프로토콜, 집도·간호사 이름</li>
+        <li>시술 전 BCVA·IOP, 시술 후 광각·시력·IOP</li>
+        <li>특이사항(출혈, 기포, 환자 움직임 등) 및 합병증</li>
+        <li>다음 방문 계획 (간격·날짜·약제)</li>
+      </ul>
+      <h3>보험·행정</h3>
+      <ul>
+        <li>산정특례(F5) 대상 여부 등록(해당 질환).</li>
+        <li>급여 기준: OCT/FAG 영상, 시력 기준, 재주사 간격 준수 — <b>영상·시력 근거 누락이 삭감 1순위</b>.</li>
+        <li>약가·주사료 청구 코드 원내 표준화.</li>
+      </ul>
+      <h3>질관리 지표 (분기별 리뷰)</h3>
+      <ul>
+        <li>월별 주사 건수 (약제별, 질환별)</li>
+        <li>합병증 발생률 (안내염·IOI·IOP spike·기타)</li>
+        <li>T&amp;E 간격 분포, 중단·전원 사례</li>
+        <li>치료 반응률(OCT 두께 변화·시력 변화) — 6개월·12개월</li>
+      </ul>
+
+      <h2 id="m-s13"><span class="num">13.</span>체크리스트 모음</h2>
+      <h3>체크리스트 ① 주사 준비 (간호사)</h3>
+      <ul class="m-checklist">
+        <li>환자 본인확인 (이름·생년월일·차트번호)</li>
+        <li>동의서 서명 완료 확인</li>
+        <li>오늘 주사 눈(R/L) 2회 확인</li>
+        <li>오늘 약제·용량·만료일 확인</li>
+        <li>활력징후 이상 없음</li>
+        <li>당일 감염/결막염/발열 없음</li>
+        <li>산동·마취 점안 완료</li>
+        <li>약제 실온화 (20–30분)</li>
+        <li>Kit·스페큘럼·캘리퍼·PVI 준비</li>
+        <li>응급카트 위치·약제 점검</li>
+      </ul>
+      <h3>체크리스트 ② Time‑Out (소리 내어)</h3>
+      <ul class="m-checklist">
+        <li>"환자: ○○○, 주민 ○○○○○○"</li>
+        <li>"주사 눈: 우안/좌안"</li>
+        <li>"약제: Eylea 2 mg / 0.05 mL, 만료 2026‑○○"</li>
+        <li>"알레르기: 없음/○○○"</li>
+        <li>"시술자: 원장, 보조: ○○ 간호사"</li>
+        <li>"동의서 서명 확인 완료"</li>
+      </ul>
+      <h3>체크리스트 ③ 주사 후 (간호사)</h3>
+      <ul class="m-checklist">
+        <li>환자 시력/광각 확인 (손가락·빛)</li>
+        <li>환자 어지럼증·구토 없음</li>
+        <li>안약 점안 (프로토콜에 따라)</li>
+        <li>귀가 지침 구두 + 유인물 교부</li>
+        <li>주의증상 재설명 ("통증/시력저하 시 즉시 전화")</li>
+        <li>다음 주사일 안내·예약</li>
+        <li>EMR 기록·청구 항목 입력</li>
+        <li>폐기물 분리 배출</li>
+        <li>시술실 소독</li>
+      </ul>
+      <h3>체크리스트 ④ 안내염 의심 (전 직원)</h3>
+      <ul class="m-checklist">
+        <li>환자 증상 기록 (발생일·통증 NRS·시력 변화)</li>
+        <li>즉시 BCVA·세극등 검사</li>
+        <li>원장 호출 → 전원 결정</li>
+        <li>전원 협력병원 연락 (담당·전화·응급실)</li>
+        <li>환자/보호자 설명 및 동의</li>
+        <li>전원 이송 준비 (차량·보호자)</li>
+        <li>원내 감염관리 기록 시작</li>
+      </ul>
+
+      <div class="m-ref">
+      <b>참고 근거·가이드라인(요약):</b> American Society of Retina Specialists (ASRS) guidelines on intravitreal injections; AAO Preferred Practice Patterns (AMD, DR, RVO); 대한망막학회 지침; 약제별 제품 허가사항(식약처). 본 문서는 서울안과 내부 표준화를 위한 요약 가이드이며, 공식 가이드라인과 개별 환자 상태에 따라 집도의 판단이 우선합니다. 실제 도입 전 지역 대학병원 망막파트와 전원 협약을 권장합니다.
+      </div>
+
+      </div>
+    </div>
+  `;
+}
+
+/* ==========================================
+   PRINT HELPER — 특정 문서만 인쇄
+========================================== */
+function printDoc(docId){
+  document.body.classList.add('print-isolated');
+  document.querySelectorAll('.printable').forEach(el=>{
+    el.classList.toggle('active-print', el.id === docId);
+  });
+  setTimeout(()=>{
+    window.print();
+    setTimeout(()=>{
+      document.body.classList.remove('print-isolated');
+      document.querySelectorAll('.printable.active-print').forEach(el=>el.classList.remove('active-print'));
+    }, 300);
+  }, 50);
+}
+function printAll(){
+  // 전체 페이지 인쇄 (기본 동작)
+  window.print();
+}
+
+/* ==========================================
+   CONSENT (환자 안내·동의서·주사 후 안내문) VIEW
+   — 3종 문서 각자 A4 인쇄 가능
+========================================== */
+function renderConsent(){
+  const root = document.getElementById('view-root');
+  const p = consentPatientId ? DB.patients.find(x=>x.id===consentPatientId) : null;
+  
+  const patientOptions = DB.patients.map(pt=>
+    `<option value="${pt.id}" ${pt.id===consentPatientId?'selected':''}>${pt.name} (${pt.chartNo||'차트번호 없음'}) · ${diagnosisName(pt.diagnosis)}</option>`
+  ).join('');
+  
+  const pName = p ? p.name : '';
+  const pChart = p ? (p.chartNo||'') : '';
+  const pBirth = p ? (p.birth||'') : '';
+  const pPhone = p ? (p.phone||'') : '';
+  
+  const dxCheck = (code)=> p && p.diagnosis===code ? '☑' : '☐';
+  const eyeCheck = (code)=> p && p.eye===code ? '☑' : '☐';
+  const drugCheck = (code)=> p && p.drug===code ? '☑' : '☐';
+  
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth()+1).padStart(2,'0');
+  const dd = String(today.getDate()).padStart(2,'0');
+  
+  // 주사 후 안내문용 — 가장 최근 주사 기록 가져오기
+  let lastInj = null;
+  let nextDate = '';
+  if(p && p.injections && p.injections.length){
+    const sorted = [...p.injections].sort((a,b)=>b.date.localeCompare(a.date));
+    lastInj = sorted[0];
+    // 다음 예정일
+    try{
+      if(p.eye==='OU'){
+        nextDate = fmtDateFull(nextScheduledDate(p, lastInj.eye||'OD'));
+      }else{
+        nextDate = fmtDateFull(nextScheduledDate(p, p.eye));
+      }
+    }catch(e){}
+  }
+  const injDate = lastInj ? fmtDateFull(lastInj.date) : `${yyyy}년 ${mm}월 ${dd}일`;
+  const injDrug = lastInj ? (DRUGS[lastInj.drug||p.drug]?.name || lastInj.drug) : (p ? DRUGS[p.drug]?.name : '');
+  const injEye = lastInj ? eyeName(lastInj.eye||p.eye) : (p ? eyeName(p.eye) : '');
+  
+  root.innerHTML = `
+    <div class="consent-view">
+      <div class="c-toolbar no-print">
+        <select class="patient-select" onchange="selectConsentPatient(this.value)">
+          <option value="">— 환자 선택 (선택 시 정보 자동 입력) —</option>
+          ${patientOptions}
+        </select>
+        <div class="c-btns">
+          ${p?`<button class="ghost" onclick="selectConsentPatient('')">선택 해제</button>`:''}
+          <span style="font-size:12px;color:#64748b;align-self:center">각 문서마다 개별 인쇄 버튼 사용 ↓</span>
+        </div>
+      </div>
+
+      <!-- ============ 문서 ① 시술 전 안내문 ============ -->
+      <div class="printable page" id="doc-preinfo">
+        <div class="doc-head-bar no-print">
+          <button onclick="printDoc('doc-preinfo')">🖨 시술 전 안내문 인쇄</button>
+        </div>
+        <div class="c-head">
+          <div>
+            <div class="clinic">SEOUL EYE CLINIC · 서울안과</div>
+            <h1>눈 안쪽 주사(유리체강내 주사) 안내서</h1>
+            <div class="subtitle">① 시술 전 안내문 · 황반변성·당뇨망막병증·망막정맥폐쇄 환자용</div>
+          </div>
+          <div style="text-align:right;font-size:13px;color:#64748b">
+            환자 성함 : <span class="${pName?'fill':''}">${pName||'____________'}</span><br>
+            차트번호 : <span class="${pChart?'fill':''}">${pChart||'____________'}</span><br>
+            주사 눈 : ${eyeCheck('OD')}우안 ${eyeCheck('OS')}좌안${p&&p.eye==='OU'?' ☑양안':''}
+          </div>
+        </div>
+
+        <div class="big-note">
+          <b>꼭 기억하세요</b>
+          이 주사는 <u>실명을 막기 위한 매우 중요한 치료</u>입니다. 여러 번 반복해야 효과가 있으며, 정해진 간격을 지키지 않으면 시력이 다시 나빠질 수 있습니다. 약속된 날짜에 꼭 오세요.
+        </div>
+
+        <h2>1. 어떤 주사인가요?</h2>
+        <p>눈 안쪽(유리체)에 직접 약물을 주사하여 <b>망막 중심부(황반)의 부종과 비정상 혈관을 치료</b>하는 방법입니다. 먹는 약이나 일반 안약으로는 도달할 수 없는 망막 질환에 가장 효과적인 치료입니다.</p>
+
+        <div class="two-col">
+          <div class="info-card"><h4>✔ 어떤 약을 쓰나요?</h4><p>아일리아, 아일리아 HD, 바비스모, 루센티스, 오저덱스 등 환자분의 병과 상태에 맞는 약을 선택합니다.</p></div>
+          <div class="info-card"><h4>✔ 얼마나 걸리나요?</h4><p>준비 포함 약 20–30분. 실제 주사는 수 초 만에 끝납니다.</p></div>
+          <div class="info-card"><h4>✔ 아픈가요?</h4><p>마취 안약을 충분히 사용합니다. 따끔한 정도로 대부분 잘 참으실 수 있습니다.</p></div>
+          <div class="info-card"><h4>✔ 몇 번 맞아야 하나요?</h4><p>초기에는 4주 간격으로 3–6회, 이후 반응에 따라 <b>8–16주 간격</b>으로 늘려갑니다.</p></div>
+        </div>
+
+        <h2>2. 주사 당일 일정</h2>
+        <div class="c-timeline">
+          <div class="c-timeline-row"><div class="when">내원 시</div><div class="what">접수 → 시력·안압 검사 → 산동 안약 (약 30분)</div></div>
+          <div class="c-timeline-row"><div class="when">주사실 이동</div><div class="what">환자 확인 → 소독 준비 → 마취 안약</div></div>
+          <div class="c-timeline-row"><div class="when">주사</div><div class="what">눈꺼풀 기구 설치 → 소독액 점안 → 주사 (수 초)</div></div>
+          <div class="c-timeline-row"><div class="when">주사 후</div><div class="what">시력·눈 안쪽 확인 → 안약 점안 → 주의사항 안내</div></div>
+          <div class="c-timeline-row"><div class="when">귀가</div><div class="what">보호자와 동행 권장, 당일 운전은 피하세요</div></div>
+        </div>
+
+        <h2>3. 주사 전 준비</h2>
+        <ul>
+          <li>당일 아침 <b>평소처럼 식사</b>하셔도 됩니다. 복용 중인 약도 그대로 드세요.</li>
+          <li><b>항응고제(와파린·아스피린·항혈소판제)는 계속 복용</b>합니다. 자의로 중단하지 마세요.</li>
+          <li>감기·발열·눈 결막염이 있으면 전화로 연락 주시고 주사를 연기합니다.</li>
+          <li>여성분은 <b>진한 화장·마스카라·아이라인은 피해주세요</b>.</li>
+          <li>보호자 한 분이 함께 오시기를 권장합니다.</li>
+        </ul>
+
+        <h2>4. 시술의 위험과 합병증</h2>
+        <p>매우 안전한 시술이지만 드물게 다음이 발생할 수 있습니다:</p>
+        <ul>
+          <li><b>흔한 현상 (걱정 없음):</b> 결막하 출혈, 이물감, 부유물 — 수일 내 호전</li>
+          <li><b>드문 합병증:</b> 안압 상승, 각막 미란, 수정체 손상</li>
+          <li><b>매우 드물지만 중대:</b> 안내염(약 0.02–0.05%), 망막박리(약 0.01–0.1%)</li>
+        </ul>
+        <p style="margin-top:8px">자세한 내용은 동반된 <b>동의서</b>를 참고하시고 의사에게 궁금한 점을 꼭 물어보세요.</p>
+
+        <p class="c-small" style="margin-top:24px">서울안과 · 시술 전 안내문 v1.0 · 이 안내문은 환자 교육 목적이며, 개별 환자의 상태에 따라 의사 판단이 우선합니다.</p>
+      </div>
+
+      <!-- ============ 문서 ② 동의서 ============ -->
+      <div class="printable page" id="doc-consent">
+        <div class="doc-head-bar no-print">
+          <button onclick="printDoc('doc-consent')">🖨 동의서 인쇄</button>
+        </div>
+        <div class="c-head">
+          <div>
+            <div class="clinic">SEOUL EYE CLINIC · 서울안과</div>
+            <h1>유리체강내 주사 시술 동의서</h1>
+            <div class="subtitle">② Informed Consent for Intravitreal Injection</div>
+          </div>
+          <div style="text-align:right;font-size:13px;color:#64748b">
+            작성일: ${yyyy}년 ${mm}월 ${dd}일
+          </div>
+        </div>
+
+        <h2>환자 정보</h2>
+        <table class="info-tbl">
+          <tr>
+            <td class="lbl">성명</td><td class="${pName?'fill':''}">${pName||''}</td>
+            <td class="lbl">생년월일</td><td class="${pBirth?'fill':''}">${pBirth||''}</td>
+          </tr>
+          <tr>
+            <td class="lbl">차트번호</td><td class="${pChart?'fill':''}">${pChart||''}</td>
+            <td class="lbl">연락처</td><td class="${pPhone?'fill':''}">${pPhone||''}</td>
+          </tr>
+          <tr>
+            <td class="lbl">진단명</td>
+            <td colspan="3">${dxCheck('wAMD')} 신생혈관성 황반변성 &nbsp; ${dxCheck('DME')} 당뇨황반부종 &nbsp; ${dxCheck('BRVO')} 망막정맥폐쇄(BRVO) &nbsp; ${dxCheck('CRVO')} 망막정맥폐쇄(CRVO) &nbsp; ${dxCheck('mCNV')} 근시성 맥락막신생혈관 &nbsp; ${dxCheck('other')} 기타: ________</td>
+          </tr>
+          <tr>
+            <td class="lbl">시술 눈</td><td>${eyeCheck('OD')} 우안 ${eyeCheck('OS')} 좌안 ${eyeCheck('OU')} 양안(각각)</td>
+            <td class="lbl">사용 약제</td><td>${drugCheck('Eylea2')} Eylea &nbsp; ${drugCheck('EyleaHD')} Eylea HD &nbsp; ${drugCheck('Vabysmo')} Vabysmo &nbsp; ${drugCheck('Lucentis')} Lucentis &nbsp; ${drugCheck('Ozurdex')} Ozurdex &nbsp; 기타: ________</td>
+          </tr>
+        </table>
+
+        <h2>시술의 필요성</h2>
+        <p>환자분은 <b>망막의 비정상적 혈관 증식 또는 황반부종</b>으로 진단되었습니다. 치료하지 않을 경우 시력이 점진적 또는 급격히 악화될 수 있으며, 심한 경우 실명에 이를 수 있습니다. 유리체강내 주사는 이를 예방·지연시키기 위한 현재 표준 치료입니다.</p>
+
+        <h2>예상되는 합병증 (반드시 이해하고 서명해 주십시오)</h2>
+        <ul class="checklist-consent">
+          <li><b>흔한 합병증(수일 내 호전):</b> 결막하 출혈, 이물감, 일시적 안압 상승, 부유물, 시야 흐림</li>
+          <li><b>드문 합병증:</b> 각막상피 손상, 유리체 출혈, 수정체 손상, 외상성 백내장</li>
+          <li><b>매우 드물지만 중대한 합병증:</b>
+            <ul>
+              <li><b>안내염(세균 감염)</b> — 약 0.02–0.05% (약 2,000–5,000건 중 1건). 조기 발견·치료가 시력 보존에 결정적.</li>
+              <li><b>망막박리</b> — 약 0.01–0.1%</li>
+              <li><b>안압 급상승</b> (일시적, 대부분 자연 회복)</li>
+              <li><b>안내 염증·망막혈관염</b> (특정 약제에서 드물게 발생)</li>
+              <li><b>전신 합병증</b>: 아주 드물게 뇌경색·심근경색 등 혈관 사건이 보고됨 (anti‑VEGF 전신 흡수)</li>
+            </ul>
+          </li>
+          <li>치료 효과에는 개인차가 있으며, 주사에도 불구하고 <b>시력이 호전되지 않거나 악화될 수 있음</b>을 이해합니다.</li>
+          <li>대부분 1회 주사로는 효과가 불충분하며, <b>수개월–수년 간 반복 주사가 필요</b>할 수 있음을 이해합니다.</li>
+        </ul>
+
+        <h2>다른 치료 대안</h2>
+        <ul>
+          <li>치료하지 않을 경우: 질환이 진행되어 시력이 악화될 수 있습니다.</li>
+          <li>레이저 치료: 일부 질환에서 보조적 역할, 대부분의 경우 주사보다 효과가 제한적입니다.</li>
+          <li>수술(유리체절제술): 특정 합병증(유리체 출혈, 견인 망막박리)에서 고려됩니다.</li>
+        </ul>
+
+        <h2>동의 및 서명</h2>
+        <p>본인은 위 내용에 대하여 담당 의사의 충분한 설명을 듣고 이해하였으며, <b>질문할 기회를 가진 뒤 자발적으로 시술에 동의</b>합니다. 본인은 시술에 따르는 위험성·한계·대안을 숙지했으며, 필요 시 <b>반복 주사·추가 치료가 필요할 수 있음</b>을 이해합니다.</p>
+
+        <div class="signature-box">
+          <table>
+            <tr><td class="label">환자 본인 또는 법정대리인</td><td class="sigline">성명: ______________________  (서명/인)<br>관계(대리인인 경우): ______________________</td></tr>
+            <tr><td class="label">설명 의사</td><td class="sigline">성명: ______________________  (서명/인)<br>면허번호: ______________________</td></tr>
+            <tr><td class="label">입회 간호사</td><td class="sigline">성명: ______________________  (서명/인)</td></tr>
+            <tr><td class="label">작성 일시</td><td>${yyyy}년 ${mm}월 ${dd}일  ______시 ______분</td></tr>
+          </table>
+        </div>
+
+        <p class="c-small">본 동의서는 시술 전 최소 1회 작성되며, 장기 치료 중 약제 변경·간격 변경 시 별도 설명 후 추가 서명하실 수 있습니다.</p>
+      </div>
+
+      <!-- ============ 문서 ③ 주사 후 안내문 ============ -->
+      <div class="printable page post-instr" id="doc-postinfo">
+        <div class="doc-head-bar no-print">
+          <button onclick="printDoc('doc-postinfo')">🖨 주사 후 안내문 인쇄</button>
+        </div>
+        <div class="c-head">
+          <div>
+            <div class="clinic">SEOUL EYE CLINIC · 서울안과</div>
+            <h1>주사 후 안내문 · 집에서 꼭 지켜주세요</h1>
+            <div class="subtitle">③ 유리체강내 주사 후 환자 주의사항 · 3일간 특히 중요</div>
+          </div>
+          <div style="text-align:right;font-size:13px;color:#64748b">
+            환자 성함 : <span class="${pName?'fill':''}">${pName||'____________'}</span><br>
+            차트번호 : <span class="${pChart?'fill':''}">${pChart||'____________'}</span>
+          </div>
+        </div>
+
+        <div class="inject-info">
+          <div style="font-size:12px;letter-spacing:3px;color:#bfdbfe;font-weight:700">오늘 받은 주사</div>
+          <div class="ii-row">
+            <span>주사일 : <b>${injDate}</b></span>
+            <span>약제 : <b>${injDrug||'____________'}</b></span>
+            <span>눈 : <b>${injEye||'____'}</b></span>
+          </div>
+        </div>
+
+        <div class="next-visit">
+          <div class="nv-lbl">다음 주사 예정일</div>
+          <div class="nv-date">${nextDate||'_______ 년 _____ 월 _____ 일'}</div>
+          <div class="nv-sub">약속 날짜를 꼭 지켜 주세요. 간격이 벌어지면 시력이 다시 나빠질 수 있습니다.</div>
+        </div>
+
+        <h2>오늘부터 꼭 지켜주세요</h2>
+        <ul class="icon-list">
+          <li><span class="ic">1</span><div><b>주사한 눈을 문지르지 마세요.</b> 첫 24시간이 특히 중요합니다.</div></li>
+          <li><span class="ic">2</span><div><b>세안·샤워는 가능합니다.</b> 단, 눈에 물·비누가 직접 들어가지 않게 주의.</div></li>
+          <li><span class="ic">3</span><div><b>24시간 동안 수영·사우나·대중목욕탕·찜질방은 금지</b>입니다.</div></li>
+          <li><span class="ic">4</span><div>처방받은 <b>항생제 안약을 정해진 횟수대로 넣으세요</b> (아래 체크표에 기록).</div></li>
+          <li><span class="ic">5</span><div>당일은 무거운 물건 들기·격한 운동·음주를 피하세요.</div></li>
+          <li><span class="ic">6</span><div><b>당일 운전 금지.</b> 보호자와 동행 귀가를 권합니다.</div></li>
+        </ul>
+
+        <div class="eyedrop-box">
+          <h3>💊 처방 안약 (간호사 기재)</h3>
+          <div class="drug-line">___________________________ 안약 — 하루 ____회 × ____일</div>
+          <div class="drug-line">___________________________ 안약 — 하루 ____회 × ____일</div>
+        </div>
+
+        <div class="drop-tracker">
+          <h3>점안 기록표 — 넣을 때마다 체크 (□에 ✔)</h3>
+          <table>
+            <tr><th>날짜</th><th>아침</th><th>점심</th><th>저녁</th><th>자기 전</th><th>메모</th></tr>
+            <tr><td class="day">1일차</td><td class="chk">□</td><td class="chk">□</td><td class="chk">□</td><td class="chk">□</td><td></td></tr>
+            <tr><td class="day">2일차</td><td class="chk">□</td><td class="chk">□</td><td class="chk">□</td><td class="chk">□</td><td></td></tr>
+            <tr><td class="day">3일차</td><td class="chk">□</td><td class="chk">□</td><td class="chk">□</td><td class="chk">□</td><td></td></tr>
+            <tr><td class="day">4일차</td><td class="chk">□</td><td class="chk">□</td><td class="chk">□</td><td class="chk">□</td><td></td></tr>
+            <tr><td class="day">5일차</td><td class="chk">□</td><td class="chk">□</td><td class="chk">□</td><td class="chk">□</td><td></td></tr>
+          </table>
+        </div>
+
+        <h2>자주 있는 현상 (걱정 안 하셔도 됩니다)</h2>
+        <div class="two-col">
+          <div class="info-card"><h4>● 눈이 빨개짐</h4><p>결막하 출혈. <b>1–2주 내 자연 소실</b>. 통증 없고 시력에 문제 없습니다.</p></div>
+          <div class="info-card"><h4>● 이물감·까끌함</h4><p>소독약 자극. 인공눈물로 조절되며 하루 이내 호전.</p></div>
+          <div class="info-card"><h4>● 부유물(날파리)</h4><p>주사액 기포. 2–3일 내 사라집니다.</p></div>
+          <div class="info-card"><h4>● 흐릿한 시야</h4><p>산동·소독액으로 일시적. 반나절 내 호전.</p></div>
+        </div>
+
+        <div class="emergency">
+          <b>응급 — 즉시 병원으로 연락하세요</b>
+          <h3>다음 증상이 있으면 기다리지 말고 바로 전화 주세요</h3>
+          <ul>
+            <li>주사 후 <b>통증이 점점 심해짐</b> (특히 2–7일째) — 안내염 위험 신호!</li>
+            <li><b>시력이 갑자기 나빠짐</b> (손가락도 안 보이거나 앞이 컴컴함)</li>
+            <li>눈 앞에 <b>검은 막·커튼·많은 섬광</b>이 보임</li>
+            <li>눈이 심하게 빨갛고 <b>노란 고름·분비물</b>이 나옴</li>
+            <li>발열, 심한 두통, 구토</li>
+          </ul>
+          <div class="phone">📞 서울안과 ___‑____‑____</div>
+          <div style="font-size:12px;margin-top:8px;color:#fecaca">야간·휴일 응급 시 가까운 대학병원 응급실로 즉시 내원하십시오.</div>
+        </div>
+
+        <p class="c-small">서울안과 · 주사 후 안내문 v1.0 · 이 안내문은 집에 가지고 가셔서 잘 보이는 곳에 두시고 다음 진료 때 지참해 주세요.</p>
+      </div>
+    </div>
+  `;
+}
+
+function selectConsentPatient(id){
+  consentPatientId = id || null;
+  renderConsent();
+}
+
+function openConsentForPatient(patientId){
+  consentPatientId = patientId;
+  setView('consent');
+}
+
+/* ==========================================
+   NURSE GUIDE VIEW (간호사 시술실 포스터 2종)
+   — A4 인쇄 후 시술실 벽 부착용
+========================================== */
+function renderNurseGuide(){
+  const root = document.getElementById('view-root');
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}`;
+  
+  root.innerHTML = `
+    <div class="nurse-view">
+      <div class="n-toolbar no-print">
+        <div class="title-wrap">
+          <h1>간호사 시술실 가이드</h1>
+          <div class="sub">A4 인쇄 후 시술실 벽에 부착 · 시술 중 참고용</div>
+        </div>
+        <div class="n-btns">
+          <span style="font-size:12px;color:#64748b;align-self:center">각 포스터마다 개별 인쇄 버튼 사용 ↓</span>
+        </div>
+      </div>
+
+      <!-- ============ 포스터 ① 시술 준비 (Pre-procedure) ============ -->
+      <div class="printable poster" id="nurse-pre">
+        <div class="doc-head-bar no-print">
+          <button onclick="printDoc('nurse-pre')">🖨 시술 준비 가이드 인쇄</button>
+        </div>
+        <div class="p-head">
+          <div>
+            <div class="p-eyebrow">Intravitreal Injection · Pre‑Procedure</div>
+            <h1>시술 준비 프로토콜</h1>
+            <div class="p-sub">간호사용 · 유리체강내 주사 · 환자 준비 · Time‑Out · 소독</div>
+          </div>
+          <div class="p-meta">서울안과<br>v1.0 · ${dateStr}</div>
+        </div>
+
+        <div class="key-nums">
+          <div class="kn"><div class="val">30초↑</div><div class="lbl">5% PVI 결막 접촉</div></div>
+          <div class="kn"><div class="val">4.0mm</div><div class="lbl">유수정체 (phakic)</div></div>
+          <div class="kn"><div class="val">3.5mm</div><div class="lbl">위상체 (pseudo)</div></div>
+          <div class="kn"><div class="val">30G</div><div class="lbl">1/2″ 주사바늘</div></div>
+        </div>
+
+        <div class="p-sec">
+          <div class="p-sec-title"><div class="n-num">A</div><h2>입실 전 준비 체크</h2></div>
+          <ul class="big-check">
+            <li>차트·팔찌·호명으로 <b>환자 본인확인</b></li>
+            <li><b>동의서 서명</b> 완료 여부</li>
+            <li>오늘 주사 <b>눈(R/L)</b> 2회 확인</li>
+            <li>약제명·용량·<b>유효기간</b> 확인</li>
+            <li>혈압·맥박 측정, 이상 시 원장 보고</li>
+            <li>감기·발열·결막염 <b>없음</b> 확인</li>
+            <li>약제 <b>실온화 20–30분</b> (냉장고 꺼내자마자 금지)</li>
+            <li>Kit·스페큘럼·캘리퍼·PVI <b>세팅 완료</b></li>
+            <li class="warn">알레르기 (특히 요오드·퀴놀론) 확인</li>
+            <li class="warn">항응고제 <b>중단하지 않음</b> 재확인</li>
+          </ul>
+        </div>
+
+        <div class="p-sec">
+          <div class="p-sec-title"><div class="n-num">B</div><h2>산동 · 마취</h2></div>
+          <ul class="big-check one-col">
+            <li><b>산동:</b> Tropicamide 0.5% 또는 Mydrin‑P, 5분 간격 2–3회</li>
+            <li><b>1차 마취:</b> Proparacaine 0.5% 점안 1회 ("따끔합니다" 안내)</li>
+            <li><b>2차 마취(선택):</b> Lidocaine 2% gel — 원내 고정 프로토콜 따라</li>
+          </ul>
+        </div>
+
+        <div class="time-out">
+          <div class="to-head">🔔 Time‑Out — 주사실 입실 직후, 간호사 주도, 소리 내어</div>
+          <h3>"잘못된 환자·잘못된 눈·잘못된 약제" 방지의 최후 안전망</h3>
+          <ul>
+            <li>"환자: <b>○○○, 주민 ○○○○○○</b>"</li>
+            <li>"주사 눈: <b>우안 / 좌안</b>"</li>
+            <li>"약제: <b>Eylea 2mg / 0.05mL</b>, 만료 ○○"</li>
+            <li>"알레르기: <b>없음 / ○○○</b>"</li>
+            <li>"집도: <b>원장</b>, 보조: <b>○○ 간호사</b>"</li>
+            <li>"동의서 서명 <b>확인 완료</b>"</li>
+          </ul>
+        </div>
+
+        <div class="p-sec">
+          <div class="p-sec-title"><div class="n-num">C</div><h2>소독 표준 프로토콜 (순서 중요)</h2></div>
+          <ul class="big-check one-col">
+            <li><b>① 안검·피부:</b> 10% Povidone‑iodine 동심원 소독, 속눈썹·눈썹 포함, 2회</li>
+            <li><b>② 결막낭:</b> 5% PVI 2–3방울 점안, 눈 깜빡임 유도, <b>최소 30–90초 유지</b></li>
+            <li><b>③ 드레이프:</b> 무균 드레이프로 속눈썹 감싸고 스페큘럼 삽입</li>
+            <li><b>④ 주사 직전:</b> 5% PVI 한 번 더 결막에 추가 (강력 권장)</li>
+            <li class="warn">PVI 알레르기 시 → Chlorhexidine 0.05%로 대체 (드뭄)</li>
+          </ul>
+        </div>
+
+        <div class="p-sec">
+          <div class="p-sec-title"><div class="n-num">D</div><h2>집도의 인계 & 시술 중 보조</h2></div>
+          <ul class="big-check">
+            <li>소리 내어 인계: "<b>소독 완료, ○안 ○○약 준비</b>"</li>
+            <li>무균 장갑·마스크·캡 <b>시술자·간호사 모두</b></li>
+            <li>시술 중 <b>환자 손 잡아주기</b>, 부드러운 안내</li>
+            <li>주사 후 즉시 <b>면봉 전달</b> (10–20초 압박)</li>
+            <li>바늘 즉시 <b>sharps 함</b></li>
+            <li class="warn">주입 중 환자가 "안 보인다" → <b>즉시 원장에게 보고</b></li>
+          </ul>
+        </div>
+
+        <div class="p-foot">
+          <div>© 서울안과 · 내부용 프로토콜 · 분기별 갱신</div>
+          <div>💡 PVI 30초 / 4.0mm / Time‑Out — 세 가지만 지켜도 안내염 대부분 예방</div>
+        </div>
+      </div>
+
+      <!-- ============ 포스터 ② 시술 후 · 응급 대응 ============ -->
+      <div class="printable poster" id="nurse-post">
+        <div class="doc-head-bar no-print">
+          <button onclick="printDoc('nurse-post')">🖨 시술 후·응급 가이드 인쇄</button>
+        </div>
+        <div class="p-head">
+          <div>
+            <div class="p-eyebrow">Post‑Procedure · Emergency Response</div>
+            <h1>시술 후 · 응급 대응 프로토콜</h1>
+            <div class="p-sub">간호사용 · 주사 후 처치 · 귀가 지침 · 안내염 의심 시 대응</div>
+          </div>
+          <div class="p-meta">서울안과<br>v1.0 · ${dateStr}</div>
+        </div>
+
+        <div class="p-sec">
+          <div class="p-sec-title"><div class="n-num">A</div><h2>시술 직후 체크 (시술실 내)</h2></div>
+          <ul class="big-check">
+            <li><b>시력·광각 확인</b> ("손가락 몇 개?" "빛 보이세요?")</li>
+            <li>어지럼·구토 없음, 누운 상태 <b>5분 휴식</b></li>
+            <li>보호 안대 또는 투명 실드 (짧게 · 귀가 시까지)</li>
+            <li>필요 시 <b>IOP 측정</b> (한눈·녹내장·주입량 많음)</li>
+            <li>시술 후 안약 점안 (원내 프로토콜 기준)</li>
+            <li>결막 세척 — 생리식염수로 PVI 자극 완화</li>
+            <li class="danger">"갑자기 안 보인다" → <b>즉시 원장 호출 · CRAO 의심</b></li>
+            <li class="danger">IOP 30↑ 지속 → <b>하강제 or 전방천자 검토</b></li>
+          </ul>
+        </div>
+
+        <div class="p-sec">
+          <div class="p-sec-title"><div class="n-num">B</div><h2>귀가 지침 구두 설명 (반드시 소리 내어)</h2></div>
+          <div class="two-grid">
+            <div>
+              <h4>✅ 환자에게 꼭 말해주기</h4>
+              <ul>
+                <li>눈 <b>문지르지 않기</b> (24시간)</li>
+                <li>수영·사우나·찜질방 <b>24시간 금지</b></li>
+                <li>세안·샤워 가능, 눈에 물 비누 직접 NO</li>
+                <li>당일 음주·격한 운동·무거운 짐 피하기</li>
+                <li>항생제 안약 <b>4회/일 × 3–5일</b></li>
+                <li>당일 <b>운전 금지</b>, 보호자 동행 권장</li>
+              </ul>
+            </div>
+            <div>
+              <h4>📋 교부할 유인물</h4>
+              <ul>
+                <li><b>주사 후 안내문</b> 1부 (점안 체크표 포함)</li>
+                <li>다음 주사일 <b>직접 기입</b>해서 전달</li>
+                <li>처방 안약명·횟수·일수 <b>기입</b>해서 전달</li>
+                <li>응급 연락처 강조 (전화번호 동그라미)</li>
+                <li>EMR 기록 · 청구 항목 입력</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-sec">
+          <div class="p-sec-title"><div class="n-num">C</div><h2>흔한 반응 — 환자에게 안심시키기</h2></div>
+          <ul class="big-check">
+            <li>결막하 출혈(빨간 반점) — <b>1–2주 내 소실</b></li>
+            <li>이물감·까끌함 — 하루 내 호전</li>
+            <li>부유물·기포 — 2–3일 내 소실</li>
+            <li>흐릿한 시야 — 산동/PVI, 반나절 내 회복</li>
+          </ul>
+        </div>
+
+        <div class="emg-box">
+          <div class="eb-head">🚨 EMERGENCY — 안내염(Endophthalmitis) 의심</div>
+          <h3>주사 후 2–7일: "통증 ↑, 시력 ↓, 충혈 ↑" = 즉시 원장 호출</h3>
+          <ul class="eb-steps">
+            <li><span class="step-n">1</span><b>BCVA 즉시 측정</b> — 광각·수지동·HM까지</li>
+            <li><span class="step-n">2</span><b>세극등 검사</b> — 각막 혼탁, 전방 축농(hypopyon), 유리체 혼탁</li>
+            <li><span class="step-n">3</span><b>원장 즉시 호출</b> → 전원 결정</li>
+            <li><span class="step-n">4</span><b>전원 협력병원 연락</b> — 담당자·전화·응급실 기록</li>
+            <li><span class="step-n">5</span>환자·보호자 <b>상황 설명 및 이송 동의</b></li>
+            <li><span class="step-n">6</span>전원 이송 준비 <b>(30분 내 출발 목표)</b></li>
+            <li><span class="step-n">7</span>시술 기록·시약 <b>lot·시간대 즉시 추적 기록</b></li>
+          </ul>
+          <div class="eb-contact">
+            전원 협력병원 : <b>________________________ (담당 ________ · 전화 ________________)</b><br>
+            응급실 직통 : <b>________________________</b>
+          </div>
+        </div>
+
+        <div class="p-sec">
+          <div class="p-sec-title"><div class="n-num">D</div><h2>폐기물 · 시술실 재세팅</h2></div>
+          <ul class="big-check">
+            <li>바늘·시린지 <b>sharps 전용함</b> (재사용 절대 금지)</li>
+            <li>감염성 폐기물 <b>전용 용기</b> 라벨링</li>
+            <li>약제 바이알 — <b>폐의약품 분리 배출</b></li>
+            <li>처치대 <b>알콜 와이프</b> (환자 간)</li>
+            <li>당일 종료 시 — 희석 차아염소산나트륨</li>
+            <li>PVI 드로퍼 <b>환자 1인 1병 또는 당일 폐기</b></li>
+          </ul>
+        </div>
+
+        <div class="p-foot">
+          <div>© 서울안과 · 내부용 프로토콜 · 분기별 갱신</div>
+          <div>💡 안내염 의심 → 30분 내 전원 출발. 절대 관찰만 하지 말 것.</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ==========================================
+   ROUTER
+========================================== */
+function render(){
+  switch(currentView){
+    case 'dashboard': renderDashboard(); break;
+    case 'today': renderToday(); break;
+    case 'patients': renderPatients(); break;
+    case 'schedule': renderSchedule(); break;
+    case 'protocols': renderProtocols(); break;
+    case 'manual': renderManual(); break;
+    case 'consent': renderConsent(); break;
+    case 'nurseGuide': renderNurseGuide(); break;
+    case 'settings': renderSettings(); break;
+    default: renderDashboard();
+  }
+}
+
+/* ==========================================
+   INIT
+========================================== */
+initialize();
+</script>
+</body>
+</html>
