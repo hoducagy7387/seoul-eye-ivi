@@ -1048,15 +1048,19 @@ function renderDashboard(){
   
   const withSchedule = active.map(p=>{
     const s = patientOverallStatus(p);
-    return {p, ...s};
-  });
+    return {p, nextDate: s ? s.nextDate : null, daysToNext: s ? s.daysToNext : null};
+  }).filter(x => x.daysToNext !== null && !isNaN(x.daysToNext));
+  
   const overdue = withSchedule.filter(x=>x.daysToNext < 0);
   const todayList = withSchedule.filter(x=>x.daysToNext === 0);
   const thisWeek = withSchedule.filter(x=>x.daysToNext > 0 && x.daysToNext <= 7);
   const nextWeek = withSchedule.filter(x=>x.daysToNext > 7 && x.daysToNext <= 14);
   const totalInj = DB.patients.reduce((s,p)=>s+(p.injections||[]).length, 0);
   const thisMonthInj = DB.patients.reduce((s,p)=>{
-    return s + (p.injections||[]).filter(i=>i.date.slice(0,7)===today.slice(0,7)).length;
+    return s + (p.injections||[]).filter(i=>{
+      const d = normalizeDate(i.date);
+      return d && d.slice(0,7)===today.slice(0,7);
+    }).length;
   }, 0);
 
   root.innerHTML = `
@@ -1102,7 +1106,7 @@ function renderDashboard(){
         ${overdue.length>0?'<span class="tiny text-muted">내원 독려 필요</span>':''}
       </div>
       ${overdue.length===0?'<div class="empty">지연 환자 없음</div>':
-        renderScheduleTable(overdue, true)}
+        renderScheduleTable(overdue, 'overdue')}
     </div>
 
     <div class="card mt-20">
@@ -1111,7 +1115,7 @@ function renderDashboard(){
         ${todayList.length>0?`<button class="btn sm ghost" onclick="setView('today')">전체 보기 →</button>`:''}
       </div>
       ${todayList.length===0?'<div class="empty">오늘 예정된 주사가 없습니다</div>':
-        renderScheduleTable(todayList, false)}
+        renderScheduleTable(todayList, 'today')}
     </div>
 
     <div class="card mt-20">
@@ -1119,13 +1123,18 @@ function renderDashboard(){
         <h3>📆 금주 예정 (${thisWeek.length}명) · 내일 ~ 7일 이내</h3>
       </div>
       ${thisWeek.length===0?'<div class="empty">금주 예정 없음</div>':
-        renderScheduleTable(thisWeek, false)}
+        renderScheduleTable(thisWeek, 'week')}
     </div>
   `;
 }
 
-function renderScheduleTable(list, showDaysOver){
-  list.sort((a,b)=>a.nextDate.localeCompare(b.nextDate));
+function renderScheduleTable(list, kind){
+  // kind: 'overdue' | 'today' | 'week' — 로직은 동일, 라벨만 달라짐
+  const sorted = list.slice().sort((a,b)=>{
+    const da = normalizeDate(a.nextDate) || '9999';
+    const db = normalizeDate(b.nextDate) || '9999';
+    return da.localeCompare(db);
+  });
   return `
     <table class="tbl">
       <thead><tr>
@@ -1133,24 +1142,29 @@ function renderScheduleTable(list, showDaysOver){
         <th>진단</th><th>약제</th><th>단계</th><th></th>
       </tr></thead>
       <tbody>
-        ${list.map(({p, nextDate, daysToNext})=>{
+        ${sorted.map(({p, nextDate, daysToNext})=>{
           const eyes = getEyesForPatient(p);
           return eyes.map(e=>{
             const nd = nextScheduledDate(p,e);
             const diff = daysBetween(todayStr(), nd);
-            if(list === thisWeek && diff !== daysToNext) return '';
+            if(isNaN(diff)) return '';
+            // 각 섹션별로 해당 범위의 주사만 표시
+            if(kind === 'overdue' && diff >= 0) return '';
+            if(kind === 'today' && diff !== 0) return '';
+            if(kind === 'week' && (diff <= 0 || diff > 7)) return '';
             const phase = phaseForEye(p,e);
             const phaseLabel = phase.phase==='loading'
               ? `Loading ${phase.next}/${phase.total}`
-              : `T&E ${phase.intervalW || DRUGS[p.drug].teMin}w`;
+              : `T&E ${phase.intervalW || DRUGS[p.drug]?.teMin || '-'}w`;
             const rowCls = diff<0?'row-overdue':(diff===0?'row-today':'');
+            const drugInfo = DRUGS[p.drug] || {color:'slate', name:p.drug||'-'};
             return `<tr class="${rowCls} clickable" onclick="openPatientDetail('${p.id}')">
               <td><b>${fmtDate(nd)}</b>${diff<0?` <span class="badge red">${-diff}일 지연</span>`:''}${diff===0?' <span class="badge blue">오늘</span>':''}</td>
               <td>${p.chartNo||'-'}</td>
-              <td>${p.name}</td>
+              <td>${p.name||'-'}</td>
               <td><span class="badge slate">${e}</span></td>
               <td>${diagnosisName(p.diagnosis)}</td>
-              <td><span class="badge ${DRUGS[p.drug].color}">${DRUGS[p.drug].name}</span></td>
+              <td><span class="badge ${drugInfo.color}">${drugInfo.name}</span></td>
               <td>${phaseLabel}</td>
               <td class="text-right">
                 <button class="btn sm ok" onclick="event.stopPropagation();openInjectionForm('${p.id}','${e}')">주사 기록</button>
@@ -1174,12 +1188,12 @@ function renderToday(){
     getEyesForPatient(p).forEach(e=>{
       const nd = nextScheduledDate(p,e);
       const diff = daysBetween(today, nd);
-      if(diff <= 0){ // today or overdue
+      if(!isNaN(diff) && diff <= 0){ // today or overdue
         list.push({p, eye:e, nextDate:nd, diff});
       }
     });
   });
-  list.sort((a,b)=>a.diff - b.diff || a.p.name.localeCompare(b.p.name));
+  list.sort((a,b)=>a.diff - b.diff || (a.p.name||'').localeCompare(b.p.name||''));
 
   root.innerHTML = `
     <div class="page-head">
@@ -1205,18 +1219,19 @@ function renderToday(){
             ${list.map((item,idx)=>{
               const {p, eye, nextDate, diff} = item;
               const phase = phaseForEye(p,eye);
+              const drugInfo = DRUGS[p.drug] || {color:'slate', name:p.drug||'-', teMin:'-'};
               const phaseLabel = phase.phase==='loading'
                 ? `Loading ${phase.next}/${phase.total}`
-                : `T&E ${phase.intervalW || DRUGS[p.drug].teMin}w`;
-              const age = p.birth?(new Date().getFullYear() - parseInt(p.birth.slice(0,4))):'-';
+                : `T&E ${phase.intervalW || drugInfo.teMin}w`;
+              const age = p.birth?(new Date().getFullYear() - parseInt(String(p.birth).slice(0,4))):'-';
               return `<tr class="${diff<0?'row-overdue':'row-today'} clickable" onclick="openPatientDetail('${p.id}')">
                 <td><b>${idx+1}</b></td>
                 <td>${p.chartNo||'-'}</td>
-                <td><b>${p.name}</b></td>
+                <td><b>${p.name||'-'}</b></td>
                 <td>${age}</td>
                 <td><span class="badge slate">${eye}</span></td>
                 <td>${diagnosisName(p.diagnosis)}</td>
-                <td><span class="badge ${DRUGS[p.drug].color}">${DRUGS[p.drug].name}</span></td>
+                <td><span class="badge ${drugInfo.color}">${drugInfo.name}</span></td>
                 <td>${phaseLabel}</td>
                 <td>${fmtDate(nextDate)}${diff<0?` <span class="badge red">${-diff}일</span>`:''}</td>
                 <td class="text-right"><button class="btn sm ok" onclick="event.stopPropagation();openInjectionForm('${p.id}','${eye}')">주사 기록</button></td>
@@ -1259,9 +1274,10 @@ function buildPatientListHtml(){
           const eyes = getEyesForPatient(p);
           const primaryEye = eyes[0];
           const phase = phaseForEye(p, primaryEye);
+          const drugInfo = DRUGS[p.drug] || {color:'slate', name:p.drug||'-', teMin:'-'};
           const phaseLabel = phase.phase==='loading'
             ? `Loading ${phase.next-1}/${phase.total}`
-            : `T&E ${phase.intervalW || DRUGS[p.drug].teMin}w`;
+            : `T&E ${phase.intervalW || drugInfo.teMin}w`;
           const totalInj = (p.injections||[]).length;
           const s = patientOverallStatus(p);
           let nextCell = '-';
@@ -1381,14 +1397,14 @@ function renderPatientDetail(p){
       <div>
         <div class="card">
           <h3>환자 정보</h3>
-          <div class="info-row"><span class="lbl">상태</span><span class="val"><span class="badge ${STATUS[p.status].cls}">${STATUS[p.status].label}</span></span></div>
+          <div class="info-row"><span class="lbl">상태</span><span class="val"><span class="badge ${STATUS[p.status]?.cls||'slate'}">${STATUS[p.status]?.label||p.status||'-'}</span></span></div>
           <div class="info-row"><span class="lbl">진단</span><span class="val">${diagnosisName(p.diagnosis)}</span></div>
-          <div class="info-row"><span class="lbl">사용 약제</span><span class="val"><span class="badge ${DRUGS[p.drug].color}">${DRUGS[p.drug].name}</span></span></div>
+          <div class="info-row"><span class="lbl">사용 약제</span><span class="val"><span class="badge ${DRUGS[p.drug]?.color||'slate'}">${DRUGS[p.drug]?.name||p.drug||'-'}</span></span></div>
           <div class="info-row"><span class="lbl">눈</span><span class="val">${eyeName(p.eye)}</span></div>
           <div class="info-row"><span class="lbl">DM/HTN</span><span class="val">${p.dm?'DM ':''}${p.htn?'HTN':''}${!p.dm&&!p.htn?'-':''}</span></div>
           <div class="info-row"><span class="lbl">항응고제</span><span class="val">${p.antiCoag?'복용':'없음'}</span></div>
           <div class="info-row"><span class="lbl">알레르기</span><span class="val">${p.allergy||'없음'}</span></div>
-          <div class="info-row"><span class="lbl">등록일</span><span class="val">${p.startDate||'-'}</span></div>
+          <div class="info-row"><span class="lbl">등록일</span><span class="val">${fmtDateFull(p.startDate)}</span></div>
           ${p.notes?`<hr><div class="tiny" style="color:var(--ink2);white-space:pre-wrap">${p.notes}</div>`:''}
         </div>
 
@@ -1503,11 +1519,11 @@ function openPatientForm(editId){
             <select name="drug" required id="drug-select">
               ${Object.entries(DRUGS).map(([k,v])=>`<option value="${k}" ${p?.drug===k?'selected':''}>${v.name} — ${v.full}</option>`).join('')}
             </select>
-            <span class="hint" id="drug-hint">${p?.drug?DRUGS[p.drug].note:''}</span>
+            <span class="hint" id="drug-hint">${p?.drug?(DRUGS[p.drug]?.note||''):''}</span>
           </div>
 
           <div class="field"><label>등록일 (첫 주사 예정일) <span class="req">*</span></label>
-            <input type="date" name="startDate" required value="${p?.startDate||todayStr()}"></div>
+            <input type="date" name="startDate" required value="${normalizeDate(p?.startDate)||todayStr()}"></div>
           <div class="field"><label>상태</label>
             <select name="status">
               ${Object.entries(STATUS).map(([k,v])=>`<option value="${k}" ${(p?.status||'active')===k?'selected':''}>${v.label}</option>`).join('')}
@@ -1820,14 +1836,18 @@ function renderSchedule(){
   const days = [];
   for(let i=0;i<28;i++){
     const d = new Date(start); d.setDate(d.getDate()+i);
-    days.push(d.toISOString().slice(0,10));
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    days.push(`${y}-${m}-${dd}`);
   }
   
   // Collect scheduled injections per day
   const byDay = {};
   DB.patients.filter(p=>p.status==='active').forEach(p=>{
     getEyesForPatient(p).forEach(e=>{
-      const nd = nextScheduledDate(p,e);
+      const nd = normalizeDate(nextScheduledDate(p,e));
+      if(!nd) return;
       if(!byDay[nd]) byDay[nd]=[];
       byDay[nd].push({p,e});
     });
@@ -1837,7 +1857,8 @@ function renderSchedule(){
   const overdueByDay = {};
   DB.patients.filter(p=>p.status==='active').forEach(p=>{
     getEyesForPatient(p).forEach(e=>{
-      const nd = nextScheduledDate(p,e);
+      const nd = normalizeDate(nextScheduledDate(p,e));
+      if(!nd) return;
       if(nd < today){
         if(!overdueByDay[nd]) overdueByDay[nd]=[];
         overdueByDay[nd].push({p,e});
@@ -1880,7 +1901,7 @@ function renderSchedule(){
               <td><b>${fmtDateFull(d)}</b>${isToday?' <span class="badge blue">오늘</span>':''}</td>
               <td>${dow}</td>
               <td>${list.length>0?`<b>${list.length}</b>`:'<span class="text-muted">-</span>'}</td>
-              <td>${list.map(({p,e})=>`<span class="badge ${DRUGS[p.drug].color}" style="margin:2px 4px 2px 0;cursor:pointer" onclick="openPatientDetail('${p.id}')">${p.name} ${e}</span>`).join('')}</td>
+              <td>${list.map(({p,e})=>`<span class="badge ${DRUGS[p.drug]?.color||'slate'}" style="margin:2px 4px 2px 0;cursor:pointer" onclick="openPatientDetail('${p.id}')">${p.name||'-'} ${e}</span>`).join('')}</td>
             </tr>`;
           }).join('')}
         </tbody>
@@ -2061,14 +2082,14 @@ function exportCSV(type){
   if(type==='patients'){
     rows.push(['차트번호','이름','생년월일','눈','진단','약제','상태','DM','HTN','알레르기','등록일','총주사수']);
     DB.patients.forEach(p=>{
-      rows.push([p.chartNo||'', p.name, p.birth||'', p.eye, diagnosisName(p.diagnosis), DRUGS[p.drug].name,
-        STATUS[p.status].label, p.dm?'Y':'N', p.htn?'Y':'N', p.allergy||'', p.startDate||'', (p.injections||[]).length]);
+      rows.push([p.chartNo||'', p.name||'', normalizeDate(p.birth)||'', p.eye||'', diagnosisName(p.diagnosis), DRUGS[p.drug]?.name||p.drug||'',
+        STATUS[p.status]?.label||p.status||'', p.dm?'Y':'N', p.htn?'Y':'N', p.allergy||'', normalizeDate(p.startDate)||'', (p.injections||[]).length]);
     });
   }else{
     rows.push(['환자명','차트번호','주사일','눈','약제','Lot','IOP전','IOP후','VA전','VA후','단계','합병증','메모']);
     DB.patients.forEach(p=>{
       (p.injections||[]).forEach(i=>{
-        rows.push([p.name, p.chartNo||'', i.date, i.eye, DRUGS[i.drug||p.drug]?.name||i.drug,
+        rows.push([p.name||'', p.chartNo||'', normalizeDate(i.date)||'', i.eye||'', DRUGS[i.drug||p.drug]?.name||i.drug||'',
           i.lot||'', i.iopPre||'', i.iopPost||'', i.vaPre||'', i.vaPost||'',
           i.phase==='loading'?`Loading ${i.loadNum}/${i.loadTotal}`:`T&E ${i.nextIntervalW}w`,
           i.complication||'none', (i.notes||'').replace(/[\n,]/g,' ')]);
