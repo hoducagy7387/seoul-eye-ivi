@@ -670,15 +670,18 @@ async function pullFromServer(){
   try {
     const res = await apiCall({action:'listAll'});
     // 서버 데이터로 로컬 덮어쓰기 (큐에 대기 중인 변경사항은 별도 유지)
-    DB.patients = (res.patients || []).map(p => ({
-      ...p,
-      // currentIntervalW 필드는 서버에서 관리하지 않으므로 로컬 기존값 유지
-      currentIntervalW: (DB.patients.find(x=>x.id===p.id) || {}).currentIntervalW || {},
-      injections: (p.injections || []).map(inj => {
-        // 주사 기록의 nextIntervalW 를 currentIntervalW로 반영
-        return inj;
-      })
-    }));
+    DB.patients = (res.patients || []).map(p => {
+      // 날짜 필드 정규화 (구글시트에서 Date 객체/ISO로 올 수 있음)
+      p.startDate = normalizeDate(p.startDate);
+      (p.injections || []).forEach(inj => {
+        inj.date = normalizeDate(inj.date);
+      });
+      return {
+        ...p,
+        currentIntervalW: (DB.patients.find(x=>x.id===p.id) || {}).currentIntervalW || {},
+        injections: (p.injections || [])
+      };
+    });
     
     // 환자별 currentIntervalW 재구성: 가장 최근 T&E 주사의 nextIntervalW를 사용
     DB.patients.forEach(p => {
@@ -892,31 +895,77 @@ function phaseForEye(patient, eye){
   if(count < proto.loadingCount) return {phase:'loading', next:count+1, total:proto.loadingCount};
   return {phase:'TE', intervalW: patient.currentIntervalW?.[eye] || proto.drug.teMin};
 }
+
+/* ==========================================
+   DATE UTILITIES — 구글시트에서 Date 객체/ISO 문자열로 와도 안전하게 처리
+========================================== */
+function normalizeDate(s){
+  // 입력: null | undefined | '' | 'YYYY-MM-DD' | 'YYYY-MM-DDTHH:mm:ss.sssZ' | Date 객체 | Excel 숫자
+  // 출력: 'YYYY-MM-DD' 또는 null
+  if(!s) return null;
+  if(s instanceof Date){
+    if(isNaN(s.getTime())) return null;
+    return s.getFullYear()+'-'+String(s.getMonth()+1).padStart(2,'0')+'-'+String(s.getDate()).padStart(2,'0');
+  }
+  if(typeof s === 'number'){
+    // Excel 시리얼 날짜 가능성
+    if(s > 20000 && s < 80000){
+      const d = new Date((s - 25569) * 86400 * 1000);
+      if(!isNaN(d.getTime())) return normalizeDate(d);
+    }
+    return null;
+  }
+  if(typeof s === 'string'){
+    // 이미 'YYYY-MM-DD' 형식
+    if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    // ISO timestamp — 앞 10자만 추출 (UTC 기준으로 날짜가 앞당겨질 수 있지만 일반 KST 입력이면 OK)
+    if(/^\d{4}-\d{2}-\d{2}T/.test(s)){
+      // KST(UTC+9) 고려: Date 객체로 파싱 후 로컬 시간 기준으로 YYYY-MM-DD 추출
+      const d = new Date(s);
+      if(!isNaN(d.getTime())) return normalizeDate(d);
+      return s.slice(0,10);
+    }
+    // YYYY/MM/DD 같은 변형
+    const m = s.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
+    if(m) return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+    return null;
+  }
+  return null;
+}
+
 function addDays(dateStr, days){
-  const d = new Date(dateStr+'T00:00:00');
-  d.setDate(d.getDate()+days);
+  const n = normalizeDate(dateStr);
+  if(!n) return null;
+  const d = new Date(n+'T00:00:00');
+  d.setDate(d.getDate() + days);
   return d.toISOString().slice(0,10);
 }
-function todayStr(){return new Date().toISOString().slice(0,10)}
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 function daysBetween(a,b){
-  const d1 = new Date(a+'T00:00:00'); const d2 = new Date(b+'T00:00:00');
+  const na = normalizeDate(a), nb = normalizeDate(b);
+  if(!na || !nb) return NaN;
+  const d1 = new Date(na+'T00:00:00');
+  const d2 = new Date(nb+'T00:00:00');
   return Math.floor((d2-d1)/(1000*60*60*24));
 }
 function nextScheduledDate(patient, eye){
   const injs = injectionsForEye(patient, eye);
   if(injs.length===0){
-    // no injection yet → use registeredAt as first expected date
-    return patient.startDate || todayStr();
+    return normalizeDate(patient.startDate) || todayStr();
   }
   const last = injs[injs.length-1];
+  const lastDate = normalizeDate(last.date);
+  if(!lastDate) return todayStr();
   const phase = phaseForEye(patient, eye);
   const proto = getProtocol(patient.drug, patient.diagnosis);
   if(phase.phase==='loading'){
-    return addDays(last.date, proto.drug.loadIntervalW*7);
+    return addDays(lastDate, proto.drug.loadIntervalW*7);
   }else{
-    // T&E: use last.nextIntervalW (or current interval)
     const w = last.nextIntervalW || phase.intervalW;
-    return addDays(last.date, w*7);
+    return addDays(lastDate, w*7);
   }
 }
 function getEyesForPatient(p){
@@ -931,8 +980,9 @@ function patientOverallStatus(p){
   eyes.forEach(e=>{
     const d = nextScheduledDate(p, e);
     const diff = daysBetween(todayStr(), d);
-    if(diff < minDaysToNext){minDaysToNext = diff; nextDate = d;}
+    if(!isNaN(diff) && diff < minDaysToNext){minDaysToNext = diff; nextDate = d;}
   });
+  if(nextDate === null) return null;
   return {nextDate, daysToNext:minDaysToNext};
 }
 
@@ -941,14 +991,18 @@ function patientOverallStatus(p){
 ========================================== */
 function el(html){const t=document.createElement('template');t.innerHTML=html.trim();return t.content.firstChild}
 function fmtDate(s){
-  if(!s) return '-';
-  const d = new Date(s+'T00:00:00');
+  const n = normalizeDate(s);
+  if(!n) return '-';
+  const d = new Date(n+'T00:00:00');
+  if(isNaN(d.getTime())) return '-';
   const day = ['일','월','화','수','목','금','토'][d.getDay()];
   return `${d.getMonth()+1}/${d.getDate()} (${day})`;
 }
 function fmtDateFull(s){
-  if(!s) return '-';
-  const d = new Date(s+'T00:00:00');
+  const n = normalizeDate(s);
+  if(!n) return '-';
+  const d = new Date(n+'T00:00:00');
+  if(isNaN(d.getTime())) return '-';
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 function diagnosisName(d){return DIAGNOSES[d]||d}
@@ -1179,40 +1233,109 @@ function renderToday(){
    RENDER: PATIENTS LIST
 ========================================== */
 let patientFilter = {q:'', status:'all', drug:'all'};
-function renderPatients(){
-  const root = document.getElementById('view-root');
+
+function buildPatientListHtml(){
   const q = patientFilter.q.toLowerCase();
   let list = DB.patients.filter(p=>{
     if(patientFilter.status!=='all' && p.status!==patientFilter.status) return false;
     if(patientFilter.drug!=='all' && p.drug!==patientFilter.drug) return false;
     if(q){
-      const hay = `${p.name} ${p.chartNo||''} ${p.birth||''}`.toLowerCase();
+      const hay = `${p.name||''} ${p.chartNo||''} ${p.birth||''}`.toLowerCase();
       if(!hay.includes(q)) return false;
     }
     return true;
   });
-  list.sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  list.sort((a,b)=>(a.name||'').localeCompare(b.name||'','ko'));
+  
+  const listHtml = list.length===0 ? '<div class="empty">조건에 맞는 환자가 없습니다</div>' :
+    `<table class="tbl">
+      <thead><tr>
+        <th>차트#</th><th>환자</th><th>생년월일</th><th>눈</th>
+        <th>진단</th><th>약제</th><th>단계</th><th>주사</th>
+        <th>다음 예정</th><th>상태</th>
+      </tr></thead>
+      <tbody>
+        ${list.map(p=>{
+          const eyes = getEyesForPatient(p);
+          const primaryEye = eyes[0];
+          const phase = phaseForEye(p, primaryEye);
+          const phaseLabel = phase.phase==='loading'
+            ? `Loading ${phase.next-1}/${phase.total}`
+            : `T&E ${phase.intervalW || DRUGS[p.drug].teMin}w`;
+          const totalInj = (p.injections||[]).length;
+          const s = patientOverallStatus(p);
+          let nextCell = '-';
+          if(p.status==='active' && s){
+            const days = s.daysToNext;
+            const badge = days<0?`<span class="badge red">${-days}일 지연</span>`:
+              days===0?`<span class="badge blue">오늘</span>`:
+              days<=7?`<span class="badge amber">${days}일 후</span>`:'';
+            nextCell = `${fmtDate(s.nextDate)} ${badge}`;
+          }
+          return `<tr class="clickable" onclick="openPatientDetail('${p.id}')">
+            <td>${p.chartNo||'-'}</td>
+            <td><b>${p.name||''}</b></td>
+            <td class="tiny">${p.birth||'-'}</td>
+            <td><span class="badge slate">${p.eye||'-'}</span></td>
+            <td>${diagnosisName(p.diagnosis)}</td>
+            <td><span class="badge ${DRUGS[p.drug]?.color||'slate'}">${DRUGS[p.drug]?.name||p.drug}</span></td>
+            <td class="tiny">${phaseLabel}</td>
+            <td>${totalInj}회</td>
+            <td>${nextCell}</td>
+            <td><span class="badge ${p.status==='active'?'green':p.status==='paused'?'amber':'slate'}">${p.status==='active'?'치료중':p.status==='paused'?'유예':'종료'}</span></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+  return {html: listHtml, total: DB.patients.length, shown: list.length};
+}
+
+function updatePatientList(){
+  const r = buildPatientListHtml();
+  const listRoot = document.getElementById('patient-list-root');
+  const countEl = document.getElementById('patient-count-display');
+  if(listRoot) listRoot.innerHTML = r.html;
+  if(countEl) countEl.textContent = `전체 ${r.total}명 · 표시 ${r.shown}명`;
+}
+
+// 한글 IME 대응: composition 중에는 필터 실행 안 함
+let _searchCompositing = false;
+function handleSearchInput(el){
+  patientFilter.q = el.value;
+  if(!_searchCompositing) updatePatientList();
+}
+function handleSearchCompositionEnd(el){
+  _searchCompositing = false;
+  patientFilter.q = el.value;
+  updatePatientList();
+}
+
+function renderPatients(){
+  const root = document.getElementById('view-root');
+  const r = buildPatientListHtml();
   
   root.innerHTML = `
     <div class="page-head">
       <div>
         <h1>환자 관리</h1>
-        <div class="page-sub">전체 ${DB.patients.length}명 · 표시 ${list.length}명</div>
+        <div class="page-sub" id="patient-count-display">전체 ${r.total}명 · 표시 ${r.shown}명</div>
       </div>
       <button class="btn" onclick="openPatientForm()">＋ 신규 환자 등록</button>
     </div>
 
     <div class="toolbar">
       <input type="text" placeholder="이름·차트번호·생년월일 검색" 
-        value="${patientFilter.q}" 
-        oninput="patientFilter.q=this.value; renderPatients()">
-      <select onchange="patientFilter.status=this.value; renderPatients()">
+        value="${patientFilter.q.replace(/"/g,'&quot;')}" 
+        oninput="handleSearchInput(this)"
+        oncompositionstart="_searchCompositing=true"
+        oncompositionend="handleSearchCompositionEnd(this)">
+      <select onchange="patientFilter.status=this.value; updatePatientList()">
         <option value="all">상태: 전체</option>
         <option value="active" ${patientFilter.status==='active'?'selected':''}>치료 중</option>
         <option value="paused" ${patientFilter.status==='paused'?'selected':''}>관찰(유예)</option>
         <option value="stopped" ${patientFilter.status==='stopped'?'selected':''}>치료 종료</option>
       </select>
-      <select onchange="patientFilter.drug=this.value; renderPatients()">
+      <select onchange="patientFilter.drug=this.value; updatePatientList()">
         <option value="all">약제: 전체</option>
         ${Object.entries(DRUGS).map(([k,v])=>`<option value="${k}" ${patientFilter.drug===k?'selected':''}>${v.name}</option>`).join('')}
       </select>
@@ -1220,46 +1343,7 @@ function renderPatients(){
     </div>
 
     <div class="card" style="padding:0;overflow:hidden">
-      ${list.length===0?'<div class="empty">조건에 맞는 환자가 없습니다</div>':
-      `<table class="tbl">
-        <thead><tr>
-          <th>차트#</th><th>환자</th><th>생년월일</th><th>눈</th>
-          <th>진단</th><th>약제</th><th>단계</th><th>주사</th>
-          <th>다음 예정</th><th>상태</th>
-        </tr></thead>
-        <tbody>
-          ${list.map(p=>{
-            const eyes = getEyesForPatient(p);
-            const primaryEye = eyes[0];
-            const phase = phaseForEye(p, primaryEye);
-            const phaseLabel = phase.phase==='loading'
-              ? `Loading ${phase.next-1}/${phase.total}`
-              : `T&E ${phase.intervalW || DRUGS[p.drug].teMin}w`;
-            const totalInj = (p.injections||[]).length;
-            const s = patientOverallStatus(p);
-            let nextCell = '-';
-            if(p.status==='active' && s){
-              const days = s.daysToNext;
-              const badge = days<0?`<span class="badge red">${-days}일 지연</span>`:
-                days===0?`<span class="badge blue">오늘</span>`:
-                days<=7?`<span class="badge amber">${days}일 후</span>`:'';
-              nextCell = `${fmtDate(s.nextDate)} ${badge}`;
-            }
-            return `<tr class="clickable" onclick="openPatientDetail('${p.id}')">
-              <td>${p.chartNo||'-'}</td>
-              <td><b>${p.name}</b></td>
-              <td class="tiny">${p.birth||'-'}</td>
-              <td><span class="badge slate">${p.eye}</span></td>
-              <td>${diagnosisName(p.diagnosis)}</td>
-              <td><span class="badge ${DRUGS[p.drug].color}">${DRUGS[p.drug].name}</span></td>
-              <td class="tiny">${phaseLabel}</td>
-              <td>${totalInj}회</td>
-              <td class="tiny">${nextCell}</td>
-              <td><span class="badge ${STATUS[p.status].cls}">${STATUS[p.status].label}</span></td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>`}
+      <div id="patient-list-root">${r.html}</div>
     </div>
   `;
 }
@@ -1320,7 +1404,7 @@ function renderPatientDetail(p){
           const injs = injectionsForEye(p, e);
           const phase = phaseForEye(p, e);
           const nd = nextScheduledDate(p, e);
-          const diff = p.status==='active'? daysBetween(todayStr(), nd) : null;
+          const diff = (p.status==='active' && nd) ? daysBetween(todayStr(), nd) : null;
           const proto = getProtocol(p.drug, p.diagnosis);
           
           let scheduleCls = '';
@@ -1330,18 +1414,18 @@ function renderPatientDetail(p){
             scheduleCls='stopped';
             scheduleLbl=STATUS[p.status].label;
             subText = '';
-          }else if(diff<0){
+          }else if(diff!==null && !isNaN(diff) && diff<0){
             scheduleCls='overdue';
             scheduleLbl=`지연 ${-diff}일`;
           }else if(diff===0){
             subText='오늘입니다';
-          }else{
+          }else if(diff!==null && !isNaN(diff)){
             subText=`${diff}일 후 · ${phase.phase==='loading'?`Loading ${phase.next}/${phase.total}`:`T&E ${phase.intervalW||proto.drug.teMin}주 간격`}`;
           }
           
           return `
             <div class="schedule-box ${scheduleCls}" style="margin-bottom:14px">
-              <div class="lbl">${eye.OD===e?'우안 (OD)':'좌안 (OS)'} · ${scheduleLbl}</div>
+              <div class="lbl">${e==='OD'?'우안 (OD)':'좌안 (OS)'} · ${scheduleLbl}</div>
               <div class="date">${fmtDateFull(nd)}</div>
               <div class="sub">${subText}</div>
               <div class="mt-12">
