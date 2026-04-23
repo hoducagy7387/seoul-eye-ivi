@@ -57,7 +57,8 @@ h1{font-size:22px;font-weight:800;color:var(--ink)}
 
 /* ===== Stats Grid ===== */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
-.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform .12s,box-shadow .12s}
+.stat[style*="cursor:pointer"]:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(30,64,175,.18);border-color:var(--brand)}
 .stat .lbl{font-size:11px;letter-spacing:1.5px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:8px}
 .stat .val{font-size:28px;font-weight:800;color:var(--ink);line-height:1}
 .stat .delta{font-size:12px;color:var(--muted);margin-top:6px}
@@ -1073,27 +1074,27 @@ function renderDashboard(){
     </div>
 
     <div class="stats">
-      <div class="stat ${overdue.length>0?'danger':''}">
+      <div class="stat ${overdue.length>0?'danger':''}" onclick="setView('overdue')" style="cursor:pointer" title="클릭: 지연 환자 전체 보기">
         <div class="lbl">지연 환자</div>
         <div class="val">${overdue.length}</div>
         <div class="delta">예정일 경과</div>
       </div>
-      <div class="stat accent">
+      <div class="stat accent" onclick="setView('today')" style="cursor:pointer" title="클릭: 오늘 주사 리스트">
         <div class="lbl">오늘 주사 예정</div>
         <div class="val">${todayList.length}</div>
-        <div class="delta">Click "오늘 리스트"</div>
+        <div class="delta">클릭: 오늘 리스트</div>
       </div>
-      <div class="stat warn">
+      <div class="stat warn" onclick="setView('thisWeek')" style="cursor:pointer" title="클릭: 이번주 예정">
         <div class="lbl">이번주 (7일 내)</div>
         <div class="val">${thisWeek.length}</div>
         <div class="delta">내일 ~ +7일</div>
       </div>
-      <div class="stat">
+      <div class="stat" onclick="openActivePatientsList()" style="cursor:pointer" title="클릭: 치료중 환자 목록">
         <div class="lbl">치료 중 환자</div>
         <div class="val">${active.length}</div>
         <div class="delta">전체 ${DB.patients.length}명</div>
       </div>
-      <div class="stat ok">
+      <div class="stat ok" onclick="setView('monthInjections')" style="cursor:pointer" title="클릭: 이번달 주사 기록 전체">
         <div class="lbl">이번달 주사 건수</div>
         <div class="val">${thisMonthInj}</div>
         <div class="delta">누적 ${totalInj}건</div>
@@ -1180,6 +1181,39 @@ function renderScheduleTable(list, kind){
    RENDER: TODAY
 ========================================== */
 function renderToday(){
+  return renderScheduleView({
+    kind: 'today',
+    title: '오늘 주사 리스트',
+    subFn: (list, today)=>`${fmtDateFull(today)} · 총 ${list.length}건 (지연 포함)`,
+    filter: (diff)=> !isNaN(diff) && diff <= 0,
+    emptyText: '오늘 예정된 주사가 없습니다.',
+    showPrint: true
+  });
+}
+
+function renderOverdue(){
+  return renderScheduleView({
+    kind: 'overdue',
+    title: '지연 환자 목록',
+    subFn: (list)=>`예정일을 지난 환자 · 총 ${list.length}건 · 내원 독려 필요`,
+    filter: (diff)=> !isNaN(diff) && diff < 0,
+    emptyText: '지연된 환자가 없습니다. 👍',
+    showPrint: false
+  });
+}
+
+function renderThisWeek(){
+  return renderScheduleView({
+    kind: 'thisWeek',
+    title: '이번주 주사 예정',
+    subFn: (list)=>`내일부터 7일 이내 · 총 ${list.length}건`,
+    filter: (diff)=> !isNaN(diff) && diff > 0 && diff <= 7,
+    emptyText: '이번주 예정된 주사가 없습니다.',
+    showPrint: true
+  });
+}
+
+function renderScheduleView(opts){
   const root = document.getElementById('view-root');
   const today = todayStr();
   const active = DB.patients.filter(p=>p.status==='active');
@@ -1188,26 +1222,27 @@ function renderToday(){
     getEyesForPatient(p).forEach(e=>{
       const nd = nextScheduledDate(p,e);
       const diff = daysBetween(today, nd);
-      if(!isNaN(diff) && diff <= 0){ // today or overdue
+      if(opts.filter(diff)){
         list.push({p, eye:e, nextDate:nd, diff});
       }
     });
   });
   list.sort((a,b)=>a.diff - b.diff || (a.p.name||'').localeCompare(b.p.name||''));
-
+  
   root.innerHTML = `
     <div class="page-head">
       <div>
-        <h1>오늘 주사 리스트</h1>
-        <div class="page-sub">${fmtDateFull(today)} · 총 ${list.length}건 (지연 포함)</div>
+        <h1>${opts.title}</h1>
+        <div class="page-sub">${opts.subFn(list, today)}</div>
       </div>
       <div class="flex">
-        <button class="btn ghost" onclick="window.print()">🖨 인쇄</button>
+        <button class="btn ghost sm" onclick="setView('dashboard')">← 대시보드</button>
+        ${opts.showPrint?`<button class="btn ghost" onclick="window.print()">🖨 인쇄</button>`:''}
         <button class="btn" onclick="openPatientForm()">＋ 신규 환자</button>
       </div>
     </div>
 
-    ${list.length===0?`<div class="card"><div class="empty">오늘 예정된 주사가 없습니다.<br><br>
+    ${list.length===0?`<div class="card"><div class="empty">${opts.emptyText}<br><br>
       <button class="btn" onclick="setView('dashboard')">대시보드로 돌아가기</button></div></div>`:
       `<div class="card">
         <table class="tbl">
@@ -1224,7 +1259,11 @@ function renderToday(){
                 ? `Loading ${phase.next}/${phase.total}`
                 : `T&E ${phase.intervalW || drugInfo.teMin}w`;
               const age = p.birth?(new Date().getFullYear() - parseInt(String(p.birth).slice(0,4))):'-';
-              return `<tr class="${diff<0?'row-overdue':'row-today'} clickable" onclick="openPatientDetail('${p.id}')">
+              const rowCls = diff<0?'row-overdue':(diff===0?'row-today':'');
+              const diffBadge = diff<0?` <span class="badge red">${-diff}일 지연</span>`
+                : diff===0?` <span class="badge blue">오늘</span>`
+                : diff<=7?` <span class="badge amber">${diff}일 후</span>`:'';
+              return `<tr class="${rowCls} clickable" onclick="openPatientDetail('${p.id}')">
                 <td><b>${idx+1}</b></td>
                 <td>${p.chartNo||'-'}</td>
                 <td><b>${p.name||'-'}</b></td>
@@ -1233,7 +1272,7 @@ function renderToday(){
                 <td>${diagnosisName(p.diagnosis)}</td>
                 <td><span class="badge ${drugInfo.color}">${drugInfo.name}</span></td>
                 <td>${phaseLabel}</td>
-                <td>${fmtDate(nextDate)}${diff<0?` <span class="badge red">${-diff}일</span>`:''}</td>
+                <td>${fmtDate(nextDate)}${diffBadge}</td>
                 <td class="text-right"><button class="btn sm ok" onclick="event.stopPropagation();openInjectionForm('${p.id}','${eye}')">주사 기록</button></td>
               </tr>`;
             }).join('')}
@@ -1242,6 +1281,116 @@ function renderToday(){
       </div>`
     }
   `;
+}
+
+/* ==========================================
+   RENDER: MONTH INJECTIONS (이번달 주사 기록 전체)
+========================================== */
+function renderMonthInjections(){
+  const root = document.getElementById('view-root');
+  const today = todayStr();
+  const ym = today.slice(0,7); // "2026-04"
+  
+  const rows = [];
+  DB.patients.forEach(p=>{
+    (p.injections||[]).forEach(inj=>{
+      const d = normalizeDate(inj.date);
+      if(!d) return;
+      if(d.slice(0,7) !== ym) return;
+      rows.push({p, inj, date: d});
+    });
+  });
+  rows.sort((a,b)=>b.date.localeCompare(a.date) || (a.p.name||'').localeCompare(b.p.name||''));
+  
+  // 통계
+  const drugCount = {};
+  const complicationCount = {};
+  rows.forEach(r=>{
+    const dk = r.inj.drug || r.p.drug;
+    drugCount[dk] = (drugCount[dk]||0) + 1;
+    if(r.inj.complication && r.inj.complication !== 'none'){
+      complicationCount[r.inj.complication] = (complicationCount[r.inj.complication]||0) + 1;
+    }
+  });
+  
+  root.innerHTML = `
+    <div class="page-head">
+      <div>
+        <h1>이번달 주사 기록</h1>
+        <div class="page-sub">${ym.replace('-','년 ')}월 · 총 ${rows.length}건</div>
+      </div>
+      <div class="flex">
+        <button class="btn ghost sm" onclick="setView('dashboard')">← 대시보드</button>
+        <button class="btn ghost" onclick="window.print()">🖨 인쇄</button>
+        <button class="btn ghost" onclick="exportCSV('injections')">CSV 내보내기</button>
+      </div>
+    </div>
+    
+    ${rows.length>0 ? `
+      <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+        <div class="stat">
+          <div class="lbl">총 주사 건수</div>
+          <div class="val">${rows.length}</div>
+          <div class="delta">이번달 누적</div>
+        </div>
+        ${Object.entries(drugCount).sort((a,b)=>b[1]-a[1]).map(([drug,count])=>{
+          const di = DRUGS[drug] || {name:drug};
+          return `<div class="stat">
+            <div class="lbl">${di.name}</div>
+            <div class="val">${count}</div>
+            <div class="delta">${Math.round(count/rows.length*100)}%</div>
+          </div>`;
+        }).join('')}
+        ${Object.keys(complicationCount).length>0 ? `
+          <div class="stat danger">
+            <div class="lbl">합병증</div>
+            <div class="val">${Object.values(complicationCount).reduce((s,c)=>s+c,0)}</div>
+            <div class="delta">${Object.entries(complicationCount).map(([k,v])=>`${k}:${v}`).join(', ')}</div>
+          </div>
+        ` : ''}
+      </div>
+    ` : ''}
+    
+    ${rows.length===0 ? `<div class="card"><div class="empty">이번달 주사 기록이 없습니다.<br><br>
+      <button class="btn" onclick="setView('dashboard')">대시보드로 돌아가기</button></div></div>` : 
+      `<div class="card mt-20">
+        <table class="tbl">
+          <thead><tr>
+            <th>주사일</th><th>차트#</th><th>환자</th><th>눈</th>
+            <th>약제</th><th>Lot</th><th>IOP (전→후)</th><th>BCVA (전→후)</th>
+            <th>단계</th><th>합병증</th>
+          </tr></thead>
+          <tbody>
+            ${rows.map(({p, inj, date})=>{
+              const drugCode = inj.drug || p.drug;
+              const drugInfo = DRUGS[drugCode] || {color:'slate', name:drugCode||'-'};
+              const hasComp = inj.complication && inj.complication !== 'none';
+              const phaseLabel = inj.phase==='loading' ? `Loading ${inj.loadNum}/${inj.loadTotal}`
+                : inj.phase==='TE' ? `T&E ${inj.nextIntervalW||'-'}w` : '-';
+              return `<tr class="clickable ${hasComp?'row-overdue':''}" onclick="openPatientDetail('${p.id}')">
+                <td><b>${fmtDate(date)}</b></td>
+                <td>${p.chartNo||'-'}</td>
+                <td><b>${p.name||'-'}</b></td>
+                <td><span class="badge slate">${inj.eye||'-'}</span></td>
+                <td><span class="badge ${drugInfo.color}">${drugInfo.name}</span></td>
+                <td class="tiny">${inj.lot||'-'}</td>
+                <td class="tiny">${inj.iopPre!=null?`${inj.iopPre}→${inj.iopPost||'-'}`:'-'}</td>
+                <td class="tiny">${inj.vaPre?`${inj.vaPre}→${inj.vaPost||'-'}`:'-'}</td>
+                <td class="tiny">${phaseLabel}</td>
+                <td>${hasComp?`<span class="badge red">⚠ ${inj.complication}</span>`:'<span class="text-muted">-</span>'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`
+    }
+  `;
+}
+
+/* 치료중 환자 목록으로 이동 (환자 관리 뷰 + active 필터) */
+function openActivePatientsList(){
+  patientFilter.status = 'active';
+  setView('patients');
 }
 
 /* ==========================================
@@ -3052,6 +3201,9 @@ function render(){
   switch(currentView){
     case 'dashboard': renderDashboard(); break;
     case 'today': renderToday(); break;
+    case 'overdue': renderOverdue(); break;
+    case 'thisWeek': renderThisWeek(); break;
+    case 'monthInjections': renderMonthInjections(); break;
     case 'patients': renderPatients(); break;
     case 'schedule': renderSchedule(); break;
     case 'protocols': renderProtocols(); break;
